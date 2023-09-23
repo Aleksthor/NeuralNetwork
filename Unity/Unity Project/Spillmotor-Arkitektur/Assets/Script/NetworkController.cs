@@ -1,21 +1,18 @@
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+
 
 public class NetworkController : MonoBehaviour
 {
     public static NetworkController instance;
 
 
+
     // Neural Network
     NeuralNetwork neuralNetwork;
-    NeuralNetwork neuralNetwork2;
-    [SerializeField] int inputLayers = 5;
-    [SerializeField] int hiddenLayers = 6;
-    [SerializeField] int outputLayers = 3;
 
-    [SerializeField] int numHiddenLayers = 3;
+
 
 
     // Test Data Set
@@ -48,19 +45,17 @@ public class NetworkController : MonoBehaviour
     void Start()
     {
 
-
         // NEURAL NETWORKS DECLARATION
         neuralNetwork = new NeuralNetwork();
-        neuralNetwork.Setup(2, 6, 3, 1);
+        neuralNetwork.Setup(2, new List<int>() {6,3,6}, 1);
 
-        neuralNetwork2 = new NeuralNetwork();
-        neuralNetwork2.Setup(16*16, 12, 2, 10);
-
+        neuralNetwork.ResizeLayer(1,1);
+        neuralNetwork.AddHiddenLayer(3);
         // Example of using single layered network
 
-        for (int i = 0; i < 50000; i++)
+        for (int i = 0; i < 20000; i++)
         {
-            int random = Random.Range(0, inputs.Count);       
+            int random = UnityEngine.Random.Range(0, inputs.Count);       
             List<float> output = neuralNetwork.FeedForward(inputs[random]);
             neuralNetwork.BackPropagate(output, targets[random]);
             
@@ -71,18 +66,13 @@ public class NetworkController : MonoBehaviour
         Debug.Log("[0,0] -> " + neuralNetwork.FeedForward(new List<float> { 0, 0 })[0]);
 
 
-        // Example of using multi layered network
-        //input = new List<float> { 1, 0};
-        //List<float> multiLayerOutput = neuralNetwork2.FeedForward(input);
-        //neuralNetwork2.BackPropagate(output, output); - CANT DO THIS YET
-
-
 
     }
 
     // Update is called once per frame
     void Update()
     {
+
 
     }
 
@@ -91,29 +81,41 @@ public class NetworkController : MonoBehaviour
     {
         float[] image = PixelDrawSystem.instance.ExtractImage();
         float[] number = PixelDrawSystem.instance.InterpretTextField();
+    }
 
-        List<float> input = new List<float>(image);
-        List<float> target = new List<float>(number);
-
-        List<float> output = neuralNetwork2.FeedForward(input);
-
-        int guess = 0;
-        float best = 0f;
-
-        for (int i = 0; i < output.Count; i++)
+    public int PrintGuess(List<float> list)
+    {
+        float best = 0;
+        int index = 0;
+        for(int i = 0; i < list.Count; i++)
         {
-            if (output[i] > best)
+            if (list[i] > best)
             {
-                best = output[i];
-                guess = i;
+                best = list[i];
+                index = i;
             }
         }
-        Debug.Log(output[0] + ", " + output[1] + ", " + output[2] + ", " + output[3] + ", " + output[4] + ", " + output[5] + ", " + output[6] + ", " + output[7] + ", " + output[8] + ", " + output[9]);
-        Debug.Log("Machine guesses: " + guess);
 
-        neuralNetwork2.BackPropagate(output,target);
+        Debug.Log("The guess was " + index);
+        return index;
+    }
+    public int PrintTarget(List<float> list)
+    {
+        float best = 0;
+        int index = 0;
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i] > best)
+            {
+                best = list[i];
+                index = i;
+            }
+        }
+        Debug.Log("The target was " + index);
+        return index;
 
     }
+
 }
 
 

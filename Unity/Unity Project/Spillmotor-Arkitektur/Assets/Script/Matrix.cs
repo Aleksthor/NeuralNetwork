@@ -13,6 +13,10 @@ public class Matrix
     {
         get { return mat[0].Length; }
     }
+    public Matrix()
+    {
+
+    }
 
     public Matrix(int rows, int cols)
     {
@@ -630,6 +634,53 @@ public class Matrix
         return sum * (1 - sum);
     }
 
+
+
+    public Matrix Relu()
+    {
+        Matrix result = new Matrix(rows, cols);
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                result.mat[i][j] = Relu(mat[i][j]);
+            }
+        }
+        return result;
+    }
+
+
+    public Matrix ReluPrime()
+    {
+        Matrix result = new Matrix(rows, cols);
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < cols; j++)
+            {
+                result.mat[i][j] = ReluPrime(mat[i][j]);
+            }
+        }
+        return result;
+
+    }
+
+    float Relu(float sum)
+    {
+        if (sum < 0)
+        {
+            return 0;
+        }
+        return sum;
+    }
+    float ReluPrime(float sum)
+    {
+        if (sum <= 0)
+        {
+            return 0;
+        }
+        return 1;
+    }
+
     public Matrix Transpose()
     {
         Matrix matrix = new Matrix(cols,rows);
@@ -675,6 +726,8 @@ public class Matrix
     public Matrix Add(Matrix matrix)
     {
         Matrix result = new Matrix(mat);
+
+
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
@@ -683,5 +736,36 @@ public class Matrix
             }
         }
         return result;
+    }
+
+
+    public void AddNodes(int _rows, int _cols)
+    {
+        float[][] new_mat = MatrixCreate(rows + _rows, cols + _cols);
+
+        for (int row = 0; row < rows; row++)
+        {
+            for (int col = 0; col < cols; col++)
+            {
+                new_mat[row][col] = mat[row][col];
+            }
+        }
+
+
+        for (int row = rows ; row < rows + _rows; row++)
+        {
+            for (int col = cols ; col < cols + _cols; col++)
+            {
+                new_mat[row][col] = UnityEngine.Random.Range(0f, 1f);
+            }
+        }
+
+
+        mat = new_mat;
+    }
+
+    public void Randomize(int _rows, int _cols)
+    {
+        mat[_rows][_cols] = UnityEngine.Random.Range(0f, 1f);   
     }
 }

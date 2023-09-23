@@ -1,9 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEditor;
 
 public class PixelDrawSystem : MonoBehaviour
 {
@@ -16,6 +18,12 @@ public class PixelDrawSystem : MonoBehaviour
     private RectTransform parent;
     [SerializeField] Button button;
     [SerializeField] TMP_InputField input_field;
+
+
+    string path = "Assets/Resources/2/2.txt";
+
+
+
     private void Awake()
     {
         if (instance == null)
@@ -35,7 +43,8 @@ public class PixelDrawSystem : MonoBehaviour
     private void Start()
     {
         Setup();
-        button.onClick.AddListener(NetworkController.instance.RetrieveImageArray);
+        button.onClick.AddListener(Extract);
+
     }
 
     private void Update()
@@ -43,13 +52,13 @@ public class PixelDrawSystem : MonoBehaviour
         if (DoesMouseHover())
         {
             
-            if (UnityEngine.Input.GetMouseButton(0))
+            if (Input.GetMouseButton(0))
             {
-                float x = UnityEngine.Input.mousePosition.x;
+                float x = Input.mousePosition.x;
                 x -= parent.position.x - (8 * width);
                 x = Mathf.RoundToInt(x / 5);
 
-                float y = UnityEngine.Input.mousePosition.y;
+                float y = Input.mousePosition.y;
                 y -= parent.position.y - (8 * height);
                 y = Mathf.RoundToInt(y / 5);
 
@@ -62,6 +71,11 @@ public class PixelDrawSystem : MonoBehaviour
         Draw();
     }
 
+    void Extract()
+    {
+        var uniquePath = AssetDatabase.GenerateUniqueAssetPath(path);
+        WriteToFile(uniquePath);
+    }
 
     private void Setup()
     {
@@ -147,6 +161,79 @@ public class PixelDrawSystem : MonoBehaviour
         }
         
     }
+
+    void WriteToFile(string path)
+    {
+        StreamWriter writer = new StreamWriter(path, false);
+        
+
+        float[] values = ExtractImage();
+        List<float> values_list = new List<float>(values);
+        int size = (int)Mathf.Sqrt(values_list.Count);
+        writer.WriteLine("IMAGE");
+        for (int i = 0; i < size; i++)
+        {
+            for (int j = 0; j < size; j++)
+            {
+                writer.Write(values[(i*size) + j] + ",");
+            }
+            writer.Write("\n");
+        }
+
+
+        writer.WriteLine("RESULT");
+        float[] targets = InterpretTextField();
+        List<float> targets_list = new List<float>(targets);
+        for (int i = 0; i < targets_list.Count; i++)
+        {
+            writer.Write(targets_list[i] + ",");
+        }
+
+
+        writer.Close();
+
+    }
+
+
+    public List<float[]> ReadFromFile(string path, int image_size)
+    {
+        List<float[]> result = new List<float[]>();
+        result.Add(new float[image_size * image_size]);
+        StreamReader reader = new StreamReader(path);
+
+        string header = reader.ReadLine();
+        if (header == "IMAGE")
+        {
+            for (int i = 0; i < image_size; i++)
+            {
+                string[] values = reader.ReadLine().Split(new char[] { ',' });
+                for (int j = 0; j < image_size; j++)
+                {
+
+                    float value = float.Parse(values[j]);
+
+                    result[0][(i * image_size) + j] = value;
+                }
+
+            }
+        }
+        result.Add(new float[10]);
+        string target = reader.ReadLine();
+        if (target == "RESULT")
+        {
+            string[] values = reader.ReadLine().Split(new char[] { ',' });
+            for (int i = 0; i < 10; i++)
+            {
+                float value = float.Parse(values[i]);
+
+                result[1][i] = value;
+            }
+        }
+
+        return result;
+        
+    }
+
 
 }
 
