@@ -1,13 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 
 public class PhysicsCar : MonoBehaviour
 {
     [SerializeField] Vector3 velocity = new Vector3();
-    [SerializeField] Vector3 position = new Vector3();
+    [SerializeField] public Vector3 position = new Vector3();
     [SerializeField] Vector3 acceleration = new Vector3();
     Vector3 total_velocity = new Vector3();
 
@@ -18,12 +19,18 @@ public class PhysicsCar : MonoBehaviour
 
     public int current_checkpoint = 0;
     public int current_lap = 0;
+    public float time_since_last_checkpoint = 0f;
+    public float max_velocity = 25;
 
     [SerializeField] public float time_lived = 0f;
     [SerializeField] public float fitness = 0f;
     [SerializeField] public bool dead = false;
 
     public NeuralNetwork brain;
+
+    public bool constant_learning = true;
+    List<float[]> all_outputs = new List<float[]>();
+    List<float[]> all_targets = new List<float[]>();
 
 
     private void Start()
@@ -33,7 +40,7 @@ public class PhysicsCar : MonoBehaviour
         if (brain == null)
         {
             brain = new NeuralNetwork();
-            brain.Setup(5, new List<int>() { 5, 6, 6, 5 }, 4);
+            brain.Setup(5, new List<int>() { 12, 12, 12, 12 }, 4);
         }
         
     }
@@ -43,7 +50,13 @@ public class PhysicsCar : MonoBehaviour
         {
             return;
         }
-        time_lived += Time.deltaTime;  
+        time_lived += Time.deltaTime;
+        time_since_last_checkpoint += Time.deltaTime;   
+
+        if (time_since_last_checkpoint > 15)
+        {
+            dead = true;
+        }
 
         List<float> inputs = new List<float>();
 
@@ -127,32 +140,57 @@ public class PhysicsCar : MonoBehaviour
         AddLeftInput(outputs[3]);
 
 
-        List<float> targets = new List<float>();
+        if (constant_learning)
+        {
+            List<float> targets = new List<float>();
 
-        float forward_safety = inputs[0] / 20f / learning_innaccuracy;
-        float forward_right_safety = inputs[1] / 20f / learning_innaccuracy;
-        float forward_left_safety = inputs[2] / 20f / learning_innaccuracy;
-        float right_safety = inputs[3] / 20f / learning_innaccuracy;
-        float left_safety = inputs[4] / 20f / learning_innaccuracy;
-
-
-        float forward_target = (forward_safety / 2f) + (forward_right_safety / 4f) + (forward_left_safety / 4);
-        float back_target = 1 - forward_target;
-        float right_target = (right_safety * 0.5f) + (forward_right_safety * 0.5f);
-        float left_target = (left_safety * 0.5f) + (forward_left_safety * 0.5f);
+            float forward_safety = inputs[0] / 20f / learning_innaccuracy;
+            float forward_right_safety = inputs[1] / 20f / learning_innaccuracy;
+            float forward_left_safety = inputs[2] / 20f / learning_innaccuracy;
+            float right_safety = inputs[3] / 20f / learning_innaccuracy;
+            float left_safety = inputs[4] / 20f / learning_innaccuracy;
 
 
-        targets.Add(forward_target);
-        targets.Add(back_target);
-        targets.Add(right_target);
-        targets.Add(left_target);
-
-        brain.BackPropagate(outputs, targets);
-
-        
+            float forward_target = (forward_safety / 2f) + (forward_right_safety / 4f) + (forward_left_safety / 4);
+            float back_target = 1 - forward_target;
+            float right_target = (right_safety * 0.5f) + (forward_right_safety * 0.5f);
+            float left_target = (left_safety * 0.5f) + (forward_left_safety * 0.5f);
 
 
+            targets.Add(forward_target);
+            targets.Add(back_target);
+            targets.Add(right_target);
+            targets.Add(left_target);
 
+            brain.BackPropagate(outputs, targets);
+        }
+        else
+        {
+            List<float> targets = new List<float>();
+
+            float forward_safety = inputs[0] / 20f / learning_innaccuracy;
+            float forward_right_safety = inputs[1] / 20f / learning_innaccuracy;
+            float forward_left_safety = inputs[2] / 20f / learning_innaccuracy;
+            float right_safety = inputs[3] / 20f / learning_innaccuracy;
+            float left_safety = inputs[4] / 20f / learning_innaccuracy;
+
+
+            float forward_target = (forward_safety / 2f) + (forward_right_safety / 4f) + (forward_left_safety / 4);
+            float back_target = 1 - forward_target;
+            float right_target = (right_safety * 0.5f) + (forward_right_safety * 0.5f);
+            float left_target = (left_safety * 0.5f) + (forward_left_safety * 0.5f);
+
+
+            targets.Add(forward_target);
+            targets.Add(back_target);
+            targets.Add(right_target);
+            targets.Add(left_target);
+
+            all_outputs.Add(outputs.ToArray());
+            all_targets.Add(targets.ToArray());
+        }
+
+      
 
 
 
@@ -165,20 +203,26 @@ public class PhysicsCar : MonoBehaviour
 
 
         Vector3 average_velocity = total_velocity / time_lived;
-        fitness = average_velocity.magnitude * (200f / time_lived) + (total_velocity.magnitude) + (300 * (current_checkpoint + (current_lap * 15)));
+        fitness = average_velocity.magnitude + (total_velocity.magnitude) + (300 * (current_checkpoint + (current_lap * 15)));
 
 
     }
 
-
+    public void Learn()
+    {
+        for (int i = 0; i < all_outputs.Count && i < all_targets.Count; i++)
+        {
+            brain.BackPropagate(all_outputs[i].ToList(), all_targets[i].ToList());
+        }
+    }
 
     public void AddForwardInput(float input)
     {
         Vector3 target = position;
         target += transform.forward * input;
-        Vector3 desired_vel = (target - position).normalized * 50;
+        Vector3 desired_vel = (target - position).normalized * max_velocity;
         Vector3 steering = desired_vel - velocity;
-        AddForce(steering * 75 * input);
+        AddForce(steering * 50 * input);
     }
     public void AddBackwardsInput(float input)
     {
@@ -189,7 +233,7 @@ public class PhysicsCar : MonoBehaviour
 
         Vector3 target = position;
         target -= transform.forward * input;
-        Vector3 desired_vel = (target - position).normalized * 25;
+        Vector3 desired_vel = (target - position).normalized * max_velocity / 2;
         Vector3 steering = desired_vel - velocity;
         AddForce(steering * 50 * input);
     }
@@ -199,7 +243,7 @@ public class PhysicsCar : MonoBehaviour
         float steering_force = 50;
         target += transform.right * velocity.sqrMagnitude * input;
 
-        Vector3 desired_vel = (target - position).normalized * 25;
+        Vector3 desired_vel = (target - position).normalized * max_velocity / 2;
         Vector3 steering = desired_vel - velocity;
         AddForce(steering * steering_force * input);
     }
@@ -209,7 +253,7 @@ public class PhysicsCar : MonoBehaviour
         float steering_force = 50;
         target -= transform.right * velocity.sqrMagnitude * input;
 
-        Vector3 desired_vel = (target - position).normalized * 25;
+        Vector3 desired_vel = (target - position).normalized * max_velocity / 2;
         Vector3 steering = desired_vel - velocity;
         AddForce(steering * steering_force * input);
     }
@@ -272,6 +316,7 @@ public class PhysicsCar : MonoBehaviour
         if (other.tag == "Checkpoint")
         {
             ColliderIndex index = other.GetComponent<ColliderIndex>();
+            time_since_last_checkpoint = 0;
 
             if (index.index == current_checkpoint - 1)
             {
