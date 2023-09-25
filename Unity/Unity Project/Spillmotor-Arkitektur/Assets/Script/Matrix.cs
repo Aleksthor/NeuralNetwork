@@ -590,7 +590,7 @@ public class Matrix
         {
             for (int j = 0; j < cols; j++)
             {
-                mat[i][j] = UnityEngine.Random.Range(0.0f,1.0f);
+                mat[i][j] = UnityEngine.Random.Range(-1.0f,1.0f);
             }
         }
     }
@@ -727,11 +727,15 @@ public class Matrix
     {
         Matrix result = new Matrix(mat);
 
-
         for (int i = 0; i < rows; i++)
         {
             for (int j = 0; j < cols; j++)
             {
+                if (i >= rows || i >= matrix.rows || j >= cols || j >= matrix.cols)
+                {
+                    Debug.Log(rows + "," + cols);
+                    Debug.Log(matrix.rows + "," + matrix.cols);
+                }
                 result.mat[i][j] += matrix.mat[i][j];
             }
         }
@@ -756,7 +760,7 @@ public class Matrix
         {
             for (int col = cols ; col < cols + _cols; col++)
             {
-                new_mat[row][col] = UnityEngine.Random.Range(0f, 1f);
+                new_mat[row][col] = UnityEngine.Random.Range(-1.0f, 1.0f);
             }
         }
 
@@ -764,8 +768,8 @@ public class Matrix
         mat = new_mat;
     }
 
-    public void Randomize(int _rows, int _cols)
+    public void Mutate(int _rows, int _cols, int mutation_rate)
     {
-        mat[_rows][_cols] = UnityEngine.Random.Range(0f, 1f);   
+        mat[_rows][_cols] += Mathf.Clamp(UnityEngine.Random.Range(-1.0f, 1.0f) / mutation_rate,-1f,1f);   
     }
 }

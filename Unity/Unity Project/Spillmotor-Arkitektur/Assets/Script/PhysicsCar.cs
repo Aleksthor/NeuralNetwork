@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
 
 public class PhysicsCar : MonoBehaviour
 {
@@ -20,7 +19,7 @@ public class PhysicsCar : MonoBehaviour
     public int current_checkpoint = 0;
     public int current_lap = 0;
     public float time_since_last_checkpoint = 0f;
-    public float max_velocity = 25;
+    public float max_velocity = 50;
 
     [SerializeField] public float time_lived = 0f;
     [SerializeField] public float fitness = 0f;
@@ -28,9 +27,8 @@ public class PhysicsCar : MonoBehaviour
 
     public NeuralNetwork brain;
 
-    public bool constant_learning = true;
-    List<float[]> all_outputs = new List<float[]>();
-    List<float[]> all_targets = new List<float[]>();
+    public bool supervised_learning = true;
+    public bool can_debug = false;
 
 
     private void Start()
@@ -40,7 +38,7 @@ public class PhysicsCar : MonoBehaviour
         if (brain == null)
         {
             brain = new NeuralNetwork();
-            brain.Setup(5, new List<int>() { 12, 12, 12, 12 }, 4);
+            brain.Setup(5, new List<int>() { 32 }, 2);
         }
         
     }
@@ -53,8 +51,9 @@ public class PhysicsCar : MonoBehaviour
         time_lived += Time.deltaTime;
         time_since_last_checkpoint += Time.deltaTime;   
 
-        if (time_since_last_checkpoint > 15)
+        if (time_since_last_checkpoint > 10)
         {
+            fitness -= 5000;
             dead = true;
         }
 
@@ -67,12 +66,12 @@ public class PhysicsCar : MonoBehaviour
         // Does the ray intersect any objects excluding the player layer
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out forward_hit, 20, layerMask))
         {
-            inputs.Add(forward_hit.distance);
+            inputs.Add(Map(forward_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * forward_hit.distance, Color.red);
         }
         else
         {
-            inputs.Add(20);
+            inputs.Add(1f);
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 20, Color.green);
         }
 
@@ -80,12 +79,12 @@ public class PhysicsCar : MonoBehaviour
         // Does the ray intersect any objects excluding the player layer
         if (Physics.Raycast(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20, layerMask))
         {
-            inputs.Add(forward_right_hit.distance);
+            inputs.Add(Map(forward_right_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * forward_right_hit.distance, Color.red);
         }
         else
         {
-            inputs.Add(20);
+            inputs.Add(1f);
             Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * 20, Color.green);
         }
 
@@ -93,12 +92,12 @@ public class PhysicsCar : MonoBehaviour
         // Does the ray intersect any objects excluding the player layer
         if (Physics.Raycast(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20, layerMask))
         {
-            inputs.Add(forward_left_hit.distance);
+            inputs.Add(Map(forward_left_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * forward_left_hit.distance, Color.red);
         }
         else
         {
-            inputs.Add(20);
+            inputs.Add(1f);
             Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * 20, Color.green);
         }
 
@@ -106,12 +105,12 @@ public class PhysicsCar : MonoBehaviour
         // Does the ray intersect any objects excluding the player layer
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.right), out right_hit, 20, layerMask))
         {
-            inputs.Add(right_hit.distance);
+            inputs.Add(Map(right_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * right_hit.distance, Color.red);
         }
         else
         {
-            inputs.Add(20);
+            inputs.Add(1f);
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * 20, Color.green);
         }
 
@@ -119,36 +118,49 @@ public class PhysicsCar : MonoBehaviour
         // Does the ray intersect any objects excluding the player layer
         if (Physics.Raycast(transform.position, transform.TransformDirection(-Vector3.right), out left_hit, 20))
         {
-            inputs.Add(left_hit.distance);
+            inputs.Add(Map(left_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * left_hit.distance, Color.red);
         }
         else
         {
-            inputs.Add(20);
+            inputs.Add(1f);
             Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * 20, Color.green);
         }
 
 
         List<float> outputs = brain.FeedForward(inputs);
 
-        AddForwardInput(outputs[0]); 
 
-        AddBackwardsInput(outputs[1]);
+        if (can_debug) 
+        {
+            Debug.Log(outputs[0] + "," + outputs[1]);
+        }   
+        if (outputs[0] >= 0.5f)
+        {
+            AddForwardInput(Map(outputs[0],0.5f,1f,0f,1f));
+        }
+        else
+        {
+            AddBackwardsInput(Map(outputs[0], 0.5f, 0f, 0f, 1f));
+        }
+        if (outputs[1] >= 0.5f)
+        {
+            AddRightInput(Map(outputs[1], 0.5f, 1f, 0f, 1f));
+        }
+        else
+        {
+            AddLeftInput(Map(outputs[1], 0.5f, 0f, 0f, 1f));
+        }
 
-        AddRightInput(outputs[2]);
-
-        AddLeftInput(outputs[3]);
-
-
-        if (constant_learning)
+        if (supervised_learning)
         {
             List<float> targets = new List<float>();
 
-            float forward_safety = inputs[0] / 20f / learning_innaccuracy;
-            float forward_right_safety = inputs[1] / 20f / learning_innaccuracy;
-            float forward_left_safety = inputs[2] / 20f / learning_innaccuracy;
-            float right_safety = inputs[3] / 20f / learning_innaccuracy;
-            float left_safety = inputs[4] / 20f / learning_innaccuracy;
+            float forward_safety = inputs[0]  / learning_innaccuracy;
+            float forward_right_safety = inputs[1] / learning_innaccuracy;
+            float forward_left_safety = inputs[2]  /learning_innaccuracy;
+            float right_safety = inputs[3]  / learning_innaccuracy;
+            float left_safety = inputs[4] / learning_innaccuracy;
 
 
             float forward_target = (forward_safety / 2f) + (forward_right_safety / 4f) + (forward_left_safety / 4);
@@ -165,29 +177,8 @@ public class PhysicsCar : MonoBehaviour
             brain.BackPropagate(outputs, targets);
         }
         else
-        {
-            List<float> targets = new List<float>();
+        { 
 
-            float forward_safety = inputs[0] / 20f / learning_innaccuracy;
-            float forward_right_safety = inputs[1] / 20f / learning_innaccuracy;
-            float forward_left_safety = inputs[2] / 20f / learning_innaccuracy;
-            float right_safety = inputs[3] / 20f / learning_innaccuracy;
-            float left_safety = inputs[4] / 20f / learning_innaccuracy;
-
-
-            float forward_target = (forward_safety / 2f) + (forward_right_safety / 4f) + (forward_left_safety / 4);
-            float back_target = 1 - forward_target;
-            float right_target = (right_safety * 0.5f) + (forward_right_safety * 0.5f);
-            float left_target = (left_safety * 0.5f) + (forward_left_safety * 0.5f);
-
-
-            targets.Add(forward_target);
-            targets.Add(back_target);
-            targets.Add(right_target);
-            targets.Add(left_target);
-
-            all_outputs.Add(outputs.ToArray());
-            all_targets.Add(targets.ToArray());
         }
 
       
@@ -203,18 +194,15 @@ public class PhysicsCar : MonoBehaviour
 
 
         Vector3 average_velocity = total_velocity / time_lived;
-        fitness = average_velocity.magnitude + (total_velocity.magnitude) + (300 * (current_checkpoint + (current_lap * 15)));
+        fitness += average_velocity.magnitude + (300 * (current_checkpoint + (current_lap * 15))) + total_velocity.magnitude;
 
 
     }
-
-    public void Learn()
+    public static float Map(float value, float from1, float to1, float from2, float to2)
     {
-        for (int i = 0; i < all_outputs.Count && i < all_targets.Count; i++)
-        {
-            brain.BackPropagate(all_outputs[i].ToList(), all_targets[i].ToList());
-        }
+        return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
     }
+
 
     public void AddForwardInput(float input)
     {
@@ -309,6 +297,7 @@ public class PhysicsCar : MonoBehaviour
 
         if (other.tag != "Checkpoint")
         {
+            fitness -= 4000 / time_lived;
             dead = true;
             return;
         }
@@ -320,16 +309,19 @@ public class PhysicsCar : MonoBehaviour
 
             if (index.index == current_checkpoint - 1)
             {
+                fitness -= 5000 / time_lived;
                 dead = true;
                 return;
             }
             if (index.index == 15 && current_checkpoint == 1)
             {
+                fitness -= 5000 / time_lived;
                 dead = true;
                 return;
             }
             if (index.index == 15 && current_checkpoint == 0)
             {
+                fitness -= 5000 / time_lived;
                 dead = true;
                 return;
             }
@@ -350,5 +342,11 @@ public class PhysicsCar : MonoBehaviour
         }
 
 
+    }
+    float Sigmoid(float sum)
+    {
+        float power = -sum;
+        float nevner = 1 + Mathf.Exp(power);
+        return 1f / nevner;
     }
 }

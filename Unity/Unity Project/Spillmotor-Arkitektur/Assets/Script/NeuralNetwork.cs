@@ -1,10 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using TMPro;
-using Unity.VisualScripting.Antlr3.Runtime.Tree;
 using UnityEngine;
-using UnityEngine.Windows;
 
 
 
@@ -287,32 +283,31 @@ public class NeuralNetwork
             hidden_biases[layer_index].AddNodes(nodes_to_add,0);
         }
 
-        // Fix input weights if hidden is first layer
+
+        // Fix weights 
+
         if (layer_index == 0)
         {
             input_hidden_weights.AddNodes(nodes_to_add, 0);
+            if (layer_index < hidden_layers.Count - 1)
+            {
+                hidden_weights[layer_index].AddNodes(0, nodes_to_add);
+            }
         }
-
-        // Fix hidden weights 
-        if (layer_index < hidden_weights.Count)
+        if (layer_index == hidden_layers.Count - 1)
         {
-
-            if (layer_index == 0)
-            {
-                input_hidden_weights.AddNodes(nodes_to_add, 0);
-            }
-            else if (layer_index == hidden_layers.Count)
-            {
-                hidden_output_weights.AddNodes(0, nodes_to_add);
-            }
-            else
+            hidden_output_weights.AddNodes(0, nodes_to_add);
+            if (layer_index > 0)
             {
                 hidden_weights[layer_index - 1].AddNodes(nodes_to_add, 0);
             }
-
-            hidden_weights[layer_index].AddNodes(0, nodes_to_add);
         }
 
+        if (layer_index > 0 && layer_index < hidden_layers.Count - 1)
+        {
+            hidden_weights[layer_index - 1].AddNodes(nodes_to_add, 0);
+            hidden_weights[layer_index].AddNodes(0, nodes_to_add);
+        }
 
 
 
@@ -362,15 +357,16 @@ public class NeuralNetwork
 
     public void GeneticAlgorithm()
     {
-        int random_mutation_chance = UnityEngine.Random.Range(20, 101);
+        int random_mutation_chance = UnityEngine.Random.Range(10, 100);
+        Debug.Log(random_mutation_chance);
         for (int n = 0; n < hidden_layers.Count; n++) 
         {
             for (int i = 0; i < hidden_layers[n].rows; i++)
             {
                 int check = UnityEngine.Random.Range(0, 101);
-                if (check > random_mutation_chance)
+                if (check < random_mutation_chance)
                 {
-                    hidden_layers[n].Randomize(i, 0);
+                    hidden_layers[n].Mutate(i, 0, Random.Range(1, 25));
                 }
             }
         }
@@ -383,9 +379,9 @@ public class NeuralNetwork
                 for (int j = 0; j < hidden_weights[n].cols; j++)
                 {
                     int check = UnityEngine.Random.Range(0, 101);
-                    if (check > random_mutation_chance)
+                    if (check < random_mutation_chance)
                     {
-                        hidden_weights[n].Randomize(i, j);
+                        hidden_weights[n].Mutate(i, j, Random.Range(1, 25));
                     }
                 }
             }
@@ -397,9 +393,9 @@ public class NeuralNetwork
             for (int j = 0; j < input_hidden_weights.cols; j++)
             {
                 int check = UnityEngine.Random.Range(0, 101);
-                if (check > random_mutation_chance)
+                if (check < random_mutation_chance)
                 {
-                    input_hidden_weights.Randomize(i, j);
+                    input_hidden_weights.Mutate(i, j, Random.Range(1, 25));
                 }
             }
         }
@@ -409,15 +405,71 @@ public class NeuralNetwork
             for (int j = 0; j < hidden_output_weights.cols; j++)
             {
                 int check = UnityEngine.Random.Range(0, 101);
-                if (check > random_mutation_chance)
+                if (check < random_mutation_chance)
                 {
-                    hidden_output_weights.Randomize(i, j);
+                    hidden_output_weights.Mutate(i, j, Random.Range(1, 25));
+                }
+            }
+        }
+        for (int n = 0; n < hidden_biases.Count; n++)
+        {
+            for (int i = 0; i < hidden_biases[n].rows; i++)
+            {
+
+                for (int j = 0; j < hidden_biases[n].cols; j++)
+                {
+                    int check = UnityEngine.Random.Range(0, 101);
+                    if (check < random_mutation_chance)
+                    {
+                        hidden_biases[n].Mutate(i, j, Random.Range(1, 25));
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < output_bias.rows; i++)
+        {
+
+            for (int j = 0; j < output_bias.cols; j++)
+            {
+                int check = UnityEngine.Random.Range(0, 101);
+                if (check < random_mutation_chance)
+                {
+                    output_bias.Mutate(i, j, Random.Range(1,25));
                 }
             }
         }
 
     }
+    public NeuralNetwork Copy()
+    {
+        NeuralNetwork result = new NeuralNetwork();
 
+        for (int i = 0; i < hidden_biases.Count; i++)
+        {
+            result.hidden_biases.Add(new Matrix(hidden_biases[i].mat));
+        }
+        result.output_bias = new Matrix(output_bias.mat);
+
+        result.input_hidden_weights = new Matrix(input_hidden_weights.mat);
+        for (int i = 0; i < hidden_weights.Count; i++)
+        {
+            result.hidden_weights.Add(new Matrix(hidden_weights[i].mat));
+        }
+        result.hidden_output_weights = new Matrix(hidden_output_weights.mat);
+
+        result.input_layer = new Matrix(hidden_output_weights.mat);
+        for (int i = 0; i < hidden_layers.Count; i++)
+        {
+            result.hidden_layers.Add(new Matrix(hidden_layers[i].mat));
+        }
+        result.output_layer = new Matrix(hidden_output_weights.mat);
+
+        result.num_nodes_hidden = num_nodes_hidden;
+        result.num_nodes_input = num_nodes_input;
+        result.num_nodes_output = num_nodes_output;
+
+        return result;
+    }
 
 
     public int GetInputs()

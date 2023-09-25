@@ -4392,6 +4392,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   car_prefab: {fileID: 4356859920733841434, guid: ab30a145f24ccf14ea08154e51572bc0, type: 3}
+  main_camera: {fileID: 0}
   spawn_position: {x: 0, y: 0, z: -25}
   cars_per_generation: 20
   chosen_parents: 2

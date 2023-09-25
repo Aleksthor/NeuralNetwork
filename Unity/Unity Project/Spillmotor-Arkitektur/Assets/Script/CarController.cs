@@ -8,7 +8,7 @@ public class CarController : MonoBehaviour
 {
     // The object we spawn in the world
     [SerializeField] GameObject car_prefab;
-    [SerializeField] GameObject camera;
+    [SerializeField] GameObject main_camera;
 
     // Logic variables
     [SerializeField] Vector3 spawn_position = new Vector3(0f, 0f, -25f);
@@ -16,7 +16,7 @@ public class CarController : MonoBehaviour
     [SerializeField] int chosen_parents = 2;
     [SerializeField] int generation = 0;
     [SerializeField] List<GameObject> cars = new List<GameObject>();
-    [SerializeField] bool constant_learning = true;
+    [SerializeField] bool supervised_learning = true;
 
     // Start is called before the first frame update
     void Start()
@@ -24,7 +24,12 @@ public class CarController : MonoBehaviour
         for (int i = 0; i < cars_per_generation; i++)
         {
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
-            cars[i].GetComponent<PhysicsCar>().constant_learning = constant_learning;
+            cars[i].GetComponent<PhysicsCar>().supervised_learning = supervised_learning;
+        }
+
+        if (main_camera == null)
+        {
+            main_camera = GameObject.Find("Main Camera");
         }
     }
 
@@ -54,28 +59,15 @@ public class CarController : MonoBehaviour
         }
         if (cars.Count > n)
         {
-            camera.transform.position = cars[n].transform.position + new Vector3(0, 45, 0);
+            main_camera.transform.position = cars[n].transform.position + new Vector3(0, 45, 0);
         }
         else
         {
-            camera.transform.position = new Vector3(-25, 175, -30);
+            main_camera.transform.position = new Vector3(-25, 175, -30);
         }
 
-
-
-        int best = 0;
-        int index = 0;
         if (all_dead)
         {
-
-            if (!constant_learning)
-            {
-                for(int i = 0; i < cars.Count; i++)
-                {
-                    PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
-                    car.Learn();
-                }
-            }
 
             SpawnNewGeneration();
             generation++;
@@ -109,7 +101,6 @@ public class CarController : MonoBehaviour
                 Debug.Log("The best fitness this generation (" + generation + "): " + cars[index].GetComponent<PhysicsCar>().fitness);
                 Debug.Log("Average fitness this generation (" + generation + "): " + (total/cars_per_generation));
             }
-
             parents.Add(cars[index]);
             cars.RemoveAt(index);
         }
@@ -122,29 +113,35 @@ public class CarController : MonoBehaviour
             Destroy(go);
         }
 
-
+        int parent_index = 0;
         // "Mutate" the parents to get a full generation
         for (int i = chosen_parents; i < cars_per_generation; i++)
         {
+            Debug.Log("Evolving");
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
-            child.constant_learning = constant_learning;
+            child.supervised_learning = supervised_learning;
 
-            int parent_index = UnityEngine.Random.Range(0, parents.Count);
             PhysicsCar parent = parents[parent_index].GetComponent<PhysicsCar>();
-
-            child.brain = parent.brain;
+            child.brain = parent.brain.Copy();
             child.brain.GeneticAlgorithm();
+            parent_index = (parent_index + 1) % parents.Count;
 
         }
         for (int i = parents.Count - 1; i >= 0; i--)
         {
+            Debug.Log("Prime - Last Gen Copy");
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
-            child.constant_learning = constant_learning;
+            child.supervised_learning = supervised_learning;
 
 
-            child.brain = parents[i].GetComponent<PhysicsCar>().brain;
+            child.brain = parents[i].GetComponent<PhysicsCar>().brain.Copy();
+            if (i == 0)
+            {
+                child.can_debug = true;
+            }
+
 
             GameObject go = parents[i];
             parents.RemoveAt(i);
