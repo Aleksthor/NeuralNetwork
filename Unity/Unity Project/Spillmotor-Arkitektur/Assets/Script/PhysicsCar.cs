@@ -9,7 +9,8 @@ public class PhysicsCar : MonoBehaviour
     [SerializeField] Vector3 velocity = new Vector3();
     [SerializeField] public Vector3 position = new Vector3();
     [SerializeField] Vector3 acceleration = new Vector3();
-    Vector3 total_velocity = new Vector3();
+    [SerializeField] Vector3 total_velocity = new Vector3();
+    [SerializeField] public Vector3 average_velocity = new Vector3();
 
     float mass = 25;
     float drag_coefficient = 0.25f;
@@ -53,7 +54,13 @@ public class PhysicsCar : MonoBehaviour
 
         if (time_since_last_checkpoint > 10)
         {
-            fitness -= 5000;
+            fitness = -15000;
+            dead = true;
+            return;
+        }
+
+        if (current_lap > 2 && average_velocity.magnitude < 7.5f)
+        {
             dead = true;
             return;
         }
@@ -131,11 +138,6 @@ public class PhysicsCar : MonoBehaviour
 
         List<float> outputs = brain.FeedForward(inputs);
 
-
-        if (can_debug) 
-        {
-            Debug.Log(outputs[0] + "," + outputs[1]);
-        }   
         if (outputs[0] >= 0.5f)
         {
             AddForwardInput(Map(outputs[0],0.5f,1f,0f,1f));
@@ -192,12 +194,11 @@ public class PhysicsCar : MonoBehaviour
         {
             transform.forward = velocity.normalized;
         }
-        Vector3 average_velocity = new Vector3();
         switch (fitness_mode)
         {
             case 0:
                 average_velocity = total_velocity / time_lived;
-                fitness = average_velocity.magnitude + (300 * (current_checkpoint + (current_lap * 15))) + total_velocity.magnitude;
+                fitness = (300 * (current_checkpoint + (current_lap * 15))) + (total_velocity.magnitude * 0.01f) + average_velocity.magnitude;
                 break;
             case 1:
                 average_velocity = total_velocity / time_lived;
@@ -321,19 +322,19 @@ public class PhysicsCar : MonoBehaviour
 
             if (index.index == current_checkpoint - 1)
             {
-                fitness -= 5000 / time_lived;
+                fitness = -15000;
                 dead = true;
                 return;
             }
             if (index.index == 15 && current_checkpoint == 1)
             {
-                fitness -= 5000 / time_lived;
+                fitness = -15000;
                 dead = true;
                 return;
             }
             if (index.index == 15 && current_checkpoint == 0)
             {
-                fitness -= 5000 / time_lived;
+                fitness = -15000;
                 dead = true;
                 return;
             }

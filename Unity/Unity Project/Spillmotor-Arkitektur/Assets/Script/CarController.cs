@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using TMPro;
 using UnityEngine;
 
 public class CarController : MonoBehaviour
@@ -19,6 +20,17 @@ public class CarController : MonoBehaviour
     [SerializeField] bool supervised_learning = true;
 
     int fitness_mode = 0;
+
+    [SerializeField] TextMeshProUGUI current_generation;
+    [SerializeField] TextMeshProUGUI generation_size;
+    [SerializeField] TextMeshProUGUI mutation_pool_size;
+    [SerializeField] TextMeshProUGUI average_fitness;
+
+    [SerializeField] TextMeshProUGUI best_fitness;
+    [SerializeField] TextMeshProUGUI average_speed;
+    [SerializeField] TextMeshProUGUI number_of_laps;
+
+
 
     // Start is called before the first frame update
     void Start()
@@ -68,6 +80,10 @@ public class CarController : MonoBehaviour
             main_camera.transform.position = new Vector3(-25, 175, -30);
         }
 
+        current_generation.text = generation.ToString();
+        generation_size.text = cars_per_generation.ToString();
+        mutation_pool_size.text = chosen_parents.ToString();
+
         if (all_dead)
         {
 
@@ -102,6 +118,12 @@ public class CarController : MonoBehaviour
             {
                 Debug.Log("The best fitness this generation (" + generation + "): " + cars[index].GetComponent<PhysicsCar>().fitness);
                 Debug.Log("Average fitness this generation (" + generation + "): " + (total/cars_per_generation));
+                average_fitness.text = (total / cars_per_generation).ToString();
+                PhysicsCar car = cars[index].GetComponent<PhysicsCar>();
+                best_fitness.text = car.fitness.ToString();
+                average_speed.text = car.average_velocity.magnitude.ToString("F2") + " m/s";
+                number_of_laps.text = car.current_lap.ToString();
+
             }
             if ((total / cars_per_generation) > 4000)
             {
