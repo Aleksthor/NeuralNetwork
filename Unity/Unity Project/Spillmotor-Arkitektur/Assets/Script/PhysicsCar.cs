@@ -29,7 +29,7 @@ public class PhysicsCar : MonoBehaviour
 
     public bool supervised_learning = true;
     public bool can_debug = false;
-
+    public int fitness_mode = 0;
 
     private void Start()
     {
@@ -55,6 +55,7 @@ public class PhysicsCar : MonoBehaviour
         {
             fitness -= 5000;
             dead = true;
+            return;
         }
 
         List<float> inputs = new List<float>();
@@ -191,10 +192,21 @@ public class PhysicsCar : MonoBehaviour
         {
             transform.forward = velocity.normalized;
         }
+        Vector3 average_velocity = new Vector3();
+        switch (fitness_mode)
+        {
+            case 0:
+                average_velocity = total_velocity / time_lived;
+                fitness = average_velocity.magnitude + (300 * (current_checkpoint + (current_lap * 15))) + total_velocity.magnitude;
+                break;
+            case 1:
+                average_velocity = total_velocity / time_lived;
+                fitness = average_velocity.magnitude;
+                break;
+            default:
+                break;
+        }
 
-
-        Vector3 average_velocity = total_velocity / time_lived;
-        fitness += average_velocity.magnitude + (300 * (current_checkpoint + (current_lap * 15))) + total_velocity.magnitude;
 
 
     }

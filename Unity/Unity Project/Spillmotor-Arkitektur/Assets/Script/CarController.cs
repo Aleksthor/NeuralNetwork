@@ -18,6 +18,8 @@ public class CarController : MonoBehaviour
     [SerializeField] List<GameObject> cars = new List<GameObject>();
     [SerializeField] bool supervised_learning = true;
 
+    int fitness_mode = 0;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -101,6 +103,12 @@ public class CarController : MonoBehaviour
                 Debug.Log("The best fitness this generation (" + generation + "): " + cars[index].GetComponent<PhysicsCar>().fitness);
                 Debug.Log("Average fitness this generation (" + generation + "): " + (total/cars_per_generation));
             }
+            if ((total / cars_per_generation) > 4000)
+            {
+                fitness_mode = 1;
+
+            }
+
             parents.Add(cars[index]);
             cars.RemoveAt(index);
         }
@@ -121,6 +129,7 @@ public class CarController : MonoBehaviour
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
             child.supervised_learning = supervised_learning;
+            child.fitness_mode = fitness_mode;
 
             PhysicsCar parent = parents[parent_index].GetComponent<PhysicsCar>();
             child.brain = parent.brain.Copy();
@@ -134,7 +143,7 @@ public class CarController : MonoBehaviour
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
             child.supervised_learning = supervised_learning;
-
+            child.fitness_mode = fitness_mode;
 
             child.brain = parents[i].GetComponent<PhysicsCar>().brain.Copy();
             if (i == 0)
