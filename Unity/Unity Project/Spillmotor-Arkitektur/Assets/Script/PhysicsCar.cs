@@ -19,10 +19,10 @@ public class PhysicsCar : MonoBehaviour
 
     public int current_checkpoint = 0;
     public int current_lap = 0;
-    public float time_since_last_checkpoint = 0f;
     public float max_velocity = 50;
 
     [SerializeField] public float time_lived = 0f;
+    [SerializeField] public float time_since_last_checkpoint = 0f;
     [SerializeField] public float fitness = 0f;
     [SerializeField] public bool dead = false;
 
@@ -50,11 +50,15 @@ public class PhysicsCar : MonoBehaviour
             return;
         }
         time_lived += Time.deltaTime;
-        time_since_last_checkpoint += Time.deltaTime;   
-
-        if (time_since_last_checkpoint > 10)
+        time_since_last_checkpoint += Time.deltaTime;
+        if (time_since_last_checkpoint > 10f)
         {
-            fitness = -15000;
+            dead = true;
+        }
+
+        if (time_lived > 5 && current_checkpoint == 0 && current_lap == 0)
+        {
+            fitness -= 20000;
             dead = true;
             return;
         }
@@ -198,7 +202,7 @@ public class PhysicsCar : MonoBehaviour
         {
             case 0:
                 average_velocity = total_velocity / time_lived;
-                fitness = (300 * (current_checkpoint + (current_lap * 15))) + (total_velocity.magnitude * 0.01f) + average_velocity.magnitude;
+                fitness = (300 * (current_checkpoint + (current_lap * 15)));
                 break;
             case 1:
                 average_velocity = total_velocity / time_lived;
@@ -307,10 +311,14 @@ public class PhysicsCar : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (dead)
+        {
+            return;
+        }
 
         if (other.tag != "Checkpoint")
         {
-            fitness -= 4000 / time_lived;
+            time_since_last_checkpoint = 0f;
             dead = true;
             return;
         }
@@ -318,23 +326,19 @@ public class PhysicsCar : MonoBehaviour
         if (other.tag == "Checkpoint")
         {
             ColliderIndex index = other.GetComponent<ColliderIndex>();
-            time_since_last_checkpoint = 0;
 
             if (index.index == current_checkpoint - 1)
             {
-                fitness = -15000;
                 dead = true;
                 return;
             }
             if (index.index == 15 && current_checkpoint == 1)
             {
-                fitness = -15000;
                 dead = true;
                 return;
             }
             if (index.index == 15 && current_checkpoint == 0)
             {
-                fitness = -15000;
                 dead = true;
                 return;
             }
@@ -355,11 +359,5 @@ public class PhysicsCar : MonoBehaviour
         }
 
 
-    }
-    float Sigmoid(float sum)
-    {
-        float power = -sum;
-        float nevner = 1 + Mathf.Exp(power);
-        return 1f / nevner;
     }
 }
