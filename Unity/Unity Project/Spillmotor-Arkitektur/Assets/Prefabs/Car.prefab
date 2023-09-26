@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 3032866847781252666}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.29, y: -0.36, z: 0}
+  m_LocalPosition: {x: 0.24, y: -0.36, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4941,12 +4941,11 @@ MonoBehaviour:
   average_velocity: {x: 0, y: 0, z: 0}
   current_checkpoint: 0
   current_lap: 0
-  time_since_last_checkpoint: 0
   max_velocity: 50
   time_lived: 0
+  time_since_last_checkpoint: 0
   fitness: 0
   dead: 0
-  supervised_learning: 1
   can_debug: 0
   fitness_mode: 0
 --- !u!65 &276954881270132221

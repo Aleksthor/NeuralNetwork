@@ -2,13 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Predator : MonoBehaviour
+public class Prey : MonoBehaviour
 {
-    // Predator
     [SerializeField] Vector3 velocity = new Vector3();
     [SerializeField] public Vector3 position = new Vector3();
     [SerializeField] Vector3 acceleration = new Vector3();
-    [SerializeField] GameObject predator_prefab;
+    [SerializeField] GameObject prey_prefab;
 
     float mass = 25;
     float drag_coefficient = 0.25f;
@@ -18,38 +17,37 @@ public class Predator : MonoBehaviour
 
     public NeuralNetwork brain;
 
-    //Logic
     [SerializeField] float energy_left = 0;
-    [SerializeField] float energy_to_create_offspring = 1400;
+    [SerializeField] float energy_to_create_offspring = 700;
 
     private void Start()
     {
         position = transform.position;
         energy_left = 500;
-
-
         if (brain == null)
         {
             brain = new NeuralNetwork();
-            brain.Setup(16, new List<int>() { 32 }, 2);
+            brain.Setup(16, new List<int>() { 4, 16 }, 2);
         }
     }
 
     void Update()
     {
         energy_left -= Time.deltaTime * 5;
+
         if (energy_left < 0)
         {
-            SimulationController.instance.RemovePredator(gameObject);
+            SimulationController.instance.RemovePrey(gameObject);
             Destroy(gameObject);
         }
-        if (energy_left > energy_to_create_offspring && SimulationController.instance.CanSpawnPredator())
+        if (energy_left > energy_to_create_offspring && SimulationController.instance.CanSpawnPrey())
         {
-            energy_left -= 1050;
-            GameObject go = Instantiate(predator_prefab, transform.position, Quaternion.identity);
-            go.GetComponent<Predator>().brain = brain.Copy();
-            go.GetComponent<Predator>().brain.GeneticAlgorithm();
-            SimulationController.instance.AddPredator(go);
+            energy_left -= 350;
+            GameObject go = Instantiate(prey_prefab, transform.position, Quaternion.identity);
+            go.GetComponent<Prey>().brain = brain.Copy();
+            go.GetComponent<Prey>().brain.GeneticAlgorithm();
+
+            SimulationController.instance.AddPrey(go);
         }
 
 
@@ -300,7 +298,6 @@ public class Predator : MonoBehaviour
             transform.forward = velocity.normalized;
         }
 
-
     }
 
 
@@ -353,7 +350,6 @@ public class Predator : MonoBehaviour
         energy_left -= velocity.magnitude * Time.deltaTime * 0.5f;
         position += velocity * Time.deltaTime;
         acceleration = Vector3.zero;
-
 
         if (position.x < -250f)
         {
@@ -408,13 +404,11 @@ public class Predator : MonoBehaviour
         return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
     }
 
-
-
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Prey")
+        if (other.tag == "Food")
         {
-            SimulationController.instance.RemovePredator(other.gameObject);
+            SimulationController.instance.RemoveFood(other.gameObject);
             Destroy(other.gameObject);
             energy_left += 350;
         }

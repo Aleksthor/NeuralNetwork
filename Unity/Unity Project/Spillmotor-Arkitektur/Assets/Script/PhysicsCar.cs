@@ -15,7 +15,6 @@ public class PhysicsCar : MonoBehaviour
     float mass = 25;
     float drag_coefficient = 0.25f;
     float friction_coefficient = 1f;
-    float learning_innaccuracy = 0.8f;
 
     public int current_checkpoint = 0;
     public int current_lap = 0;
@@ -28,7 +27,6 @@ public class PhysicsCar : MonoBehaviour
 
     public NeuralNetwork brain;
 
-    public bool supervised_learning = true;
     public bool can_debug = false;
     public int fitness_mode = 0;
 
@@ -159,39 +157,7 @@ public class PhysicsCar : MonoBehaviour
             AddLeftInput(Map(outputs[1], 0.5f, 0f, 0f, 1f));
         }
 
-        if (supervised_learning)
-        {
-            List<float> targets = new List<float>();
-
-            float forward_safety = inputs[0]  / learning_innaccuracy;
-            float forward_right_safety = inputs[1] / learning_innaccuracy;
-            float forward_left_safety = inputs[2]  /learning_innaccuracy;
-            float right_safety = inputs[3]  / learning_innaccuracy;
-            float left_safety = inputs[4] / learning_innaccuracy;
-
-
-            float forward_target = (forward_safety / 2f) + (forward_right_safety / 4f) + (forward_left_safety / 4);
-            float back_target = 1 - forward_target;
-            float right_target = (right_safety * 0.5f) + (forward_right_safety * 0.5f);
-            float left_target = (left_safety * 0.5f) + (forward_left_safety * 0.5f);
-
-
-            targets.Add(forward_target);
-            targets.Add(back_target);
-            targets.Add(right_target);
-            targets.Add(left_target);
-
-            brain.BackPropagate(outputs, targets);
-        }
-        else
-        { 
-
-        }
-
-      
-
-
-
+     
         Move();
 
         if (velocity.magnitude > 1.5f)
@@ -345,6 +311,7 @@ public class PhysicsCar : MonoBehaviour
 
             if (index.index == current_checkpoint)
             {
+                time_since_last_checkpoint = 0f;
                 if (index.index == 15)
                 {
                     current_checkpoint = 0;

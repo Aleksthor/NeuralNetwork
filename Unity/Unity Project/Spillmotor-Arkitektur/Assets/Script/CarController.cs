@@ -18,7 +18,6 @@ public class CarController : MonoBehaviour
     [SerializeField] int chosen_parents = 2;
     [SerializeField] int generation = 0;
     [SerializeField] List<GameObject> cars = new List<GameObject>();
-    [SerializeField] bool supervised_learning = true;
 
     int fitness_mode = 0;
     int b = 0;
@@ -40,7 +39,6 @@ public class CarController : MonoBehaviour
         for (int i = 0; i < cars_per_generation; i++)
         {
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
-            cars[i].GetComponent<PhysicsCar>().supervised_learning = supervised_learning;
         }
 
         if (main_camera == null)
@@ -183,7 +181,6 @@ public class CarController : MonoBehaviour
             Debug.Log("Evolving");
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
-            child.supervised_learning = supervised_learning;
             child.fitness_mode = fitness_mode;
 
             PhysicsCar parent = parents[parent_index].GetComponent<PhysicsCar>();
@@ -197,7 +194,6 @@ public class CarController : MonoBehaviour
             Debug.Log("Prime - Last Gen Copy");
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
-            child.supervised_learning = supervised_learning;
             child.fitness_mode = fitness_mode;
 
             child.brain = parents[i].GetComponent<PhysicsCar>().brain.Copy();
@@ -238,7 +234,6 @@ public class CarController : MonoBehaviour
         for (int i = 0; i < cars_per_generation; i++)
         {
             cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
-            cars[i].GetComponent<PhysicsCar>().supervised_learning = supervised_learning;
         }
     }
 }
