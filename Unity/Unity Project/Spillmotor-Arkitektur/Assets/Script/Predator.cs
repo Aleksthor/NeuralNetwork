@@ -5,51 +5,58 @@ using UnityEngine;
 public class Predator : MonoBehaviour
 {
     // Predator
-    [SerializeField] Vector3 velocity = new Vector3();
-    [SerializeField] public Vector3 position = new Vector3();
-    [SerializeField] Vector3 acceleration = new Vector3();
     [SerializeField] GameObject predator_prefab;
 
-    float mass = 25;
-    float drag_coefficient = 0.25f;
-    float friction_coefficient = 1f;
-
-    public float max_velocity = 25;
+    public float max_velocity = 1;
+    public float age = 0f;
+    public float max_age = 50f;
 
     public NeuralNetwork brain;
-
+    public bool dead = false;
     //Logic
-    [SerializeField] float energy_left = 0;
-    [SerializeField] float energy_to_create_offspring = 1400;
+    [SerializeField] public float energy = 0;
+    [SerializeField] float energy_to_create_offspring = 700;
+
+    Rigidbody rb;
+    public float time_without_food = 0f;
 
     private void Start()
     {
-        position = transform.position;
-        energy_left = 500;
-
-
+        energy = 0;
+        rb = GetComponent<Rigidbody>();
         if (brain == null)
         {
             brain = new NeuralNetwork();
-            brain.Setup(16, new List<int>() { 32 }, 2);
+            brain.Setup(8, new List<int>() { 16 }, 2);
         }
+        max_age = Random.Range(25f, 40f);
     }
 
     void Update()
     {
-        energy_left -= Time.deltaTime * 5;
-        if (energy_left < 0)
+        if (dead) return;
+        age += Time.deltaTime;
+        time_without_food += Time.deltaTime;    
+        if (age > max_age)
         {
-            SimulationController.instance.RemovePredator(gameObject);
-            Destroy(gameObject);
+            dead = true;
+            return;
         }
-        if (energy_left > energy_to_create_offspring && SimulationController.instance.CanSpawnPredator())
+        if (time_without_food > 5f)
         {
-            energy_left -= 1050;
-            GameObject go = Instantiate(predator_prefab, transform.position, Quaternion.identity);
-            go.GetComponent<Predator>().brain = brain.Copy();
-            go.GetComponent<Predator>().brain.GeneticAlgorithm();
-            SimulationController.instance.AddPredator(go);
+            dead = true;
+            return;
+        }
+
+        if (energy > energy_to_create_offspring)
+        {           
+            if (SimulationController.instance.object_pool.CanSpawnPredator())
+            {
+                energy -= energy_to_create_offspring;
+                GameObject go = SimulationController.instance.object_pool.InstantiatePredator(transform.position + new Vector3(Random.Range(-1, 1), 0, Random.Range(-1, 1)), this);
+                SimulationController.instance.predator_list.Add(go);
+            }
+
         }
 
 
@@ -62,26 +69,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out forward_hit, 20))
         {
             inputs.Add(Map(forward_hit.distance, 0, 20, -1f, 1f));
-            switch (forward_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit forward_right_hit;
@@ -89,26 +81,10 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20))
         {
             inputs.Add(Map(forward_right_hit.distance, 0, 20, -1f, 1f));
-            switch (forward_right_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit forward_left_hit;
@@ -116,26 +92,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20))
         {
             inputs.Add(Map(forward_left_hit.distance, 0, 20, -1f, 1f));
-            switch (forward_left_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit right_hit;
@@ -143,26 +104,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.right), out right_hit, 20))
         {
             inputs.Add(Map(right_hit.distance, 0, 20, -1f, 1f));
-            switch (right_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit left_hit;
@@ -170,26 +116,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(-Vector3.right), out left_hit, 20))
         {
             inputs.Add(Map(left_hit.distance, 0, 20, -1f, 1f));
-            switch (left_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit backwards_hit;
@@ -197,26 +128,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection(-Vector3.forward), out backwards_hit, 20))
         {
             inputs.Add(Map(backwards_hit.distance, 0, 20, -1f, 1f));
-            switch (backwards_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit backwards_left_hit;
@@ -224,26 +140,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection((-Vector3.right - Vector3.forward).normalized), out backwards_left_hit, 20))
         {
             inputs.Add(Map(backwards_left_hit.distance, 0, 20, -1f, 1f));
-            switch (backwards_left_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         RaycastHit backwards_right_hit;
@@ -251,26 +152,11 @@ public class Predator : MonoBehaviour
         if (Physics.Raycast(transform.position, transform.TransformDirection((Vector3.right - Vector3.forward).normalized), out backwards_right_hit, 20))
         {
             inputs.Add(Map(backwards_right_hit.distance, 0, 20, -1f, 1f));
-            switch (backwards_right_hit.collider.tag)
-            {
-                case "Food":
-                    inputs.Add(0);
-                    break;
-                case "Predator":
-                    inputs.Add(1);
-                    break;
-                case "Prey":
-                    inputs.Add(0.5f);
-                    break;
-                default:
-                    inputs.Add(-0.5f);
-                    break;
-            }
+
         }
         else
         {
             inputs.Add(1f);
-            inputs.Add(-1f);
         }
 
         List<float> outputs = brain.FeedForward(inputs);
@@ -291,117 +177,52 @@ public class Predator : MonoBehaviour
         {
             AddLeftInput(Map(outputs[1], 0.5f, 0f, 0f, 1f));
         }
-
-
-        Move();
-
-        if (velocity.magnitude > 1.5f)
+        if (transform.position.x < -250f)
         {
-            transform.forward = velocity.normalized;
+            rb.MovePosition(new Vector3(250f, transform.position.y, transform.position.z));
         }
-
+        if (transform.position.x > 250f)
+        {
+            rb.MovePosition(new Vector3(-250f, transform.position.y, transform.position.z));
+        }
+        if (transform.position.z < -250f)
+        {
+            rb.MovePosition(new Vector3(transform.position.x, transform.position.y, 250f));
+        }
+        if (transform.position.z > 250f)
+        {
+            rb.MovePosition(new Vector3(transform.position.x, transform.position.y, -250f));
+        }
+        if (rb.velocity.magnitude > 0.01f)
+        {
+            transform.forward = rb.velocity.normalized;
+        }
+        rb.velocity = Vector3.ClampMagnitude(rb.velocity, 45);
 
     }
 
 
     public void AddForwardInput(float input)
     {
-        Vector3 target = position;
-        target += transform.forward * input;
-        Vector3 desired_vel = (target - position).normalized * max_velocity;
-        Vector3 steering = desired_vel - velocity;
-        AddForce(steering * 50 * input);
+        rb.AddForce(transform.forward * 50 * input);
     }
     public void AddBackwardsInput(float input)
     {
-        if (velocity.magnitude < 1)
+        if (rb.velocity.magnitude < 1)
         {
             return;
         }
-
-        Vector3 target = position;
-        target -= transform.forward * input;
-        Vector3 desired_vel = (target - position).normalized * max_velocity / 2;
-        Vector3 steering = desired_vel - velocity;
-        AddForce(steering * 50 * input);
+        rb.AddForce(-transform.forward * 50 * input);
     }
     public void AddRightInput(float input)
     {
-        Vector3 target = position;
-        float steering_force = 50;
-        target += transform.right * velocity.sqrMagnitude * input;
-
-        Vector3 desired_vel = (target - position).normalized * max_velocity / 2;
-        Vector3 steering = desired_vel - velocity;
-        AddForce(steering * steering_force * input);
+        rb.AddForce(transform.right * 30 * input);
     }
     public void AddLeftInput(float input)
     {
-        Vector3 target = position;
-        float steering_force = 50;
-        target -= transform.right * velocity.sqrMagnitude * input;
-
-        Vector3 desired_vel = (target - position).normalized * max_velocity / 2;
-        Vector3 steering = desired_vel - velocity;
-        AddForce(steering * steering_force * input);
+        rb.AddForce(transform.right * 30 * input * -1f);
     }
 
-    public void Move()
-    {
-        //AddFriction();
-        velocity += acceleration * Time.deltaTime;
-        energy_left -= velocity.magnitude * Time.deltaTime * 0.5f;
-        position += velocity * Time.deltaTime;
-        acceleration = Vector3.zero;
-
-
-        if (position.x < -250f)
-        {
-            position.x = 249f;
-        }
-        if (position.x > 250f)
-        {
-            position.x = -249f;
-        }
-        if (position.z < -250f)
-        {
-            position.z = 249f;
-        }
-        if (position.z > 250f)
-        {
-            position.z = -249f;
-        }
-
-        transform.position = position;
-    }
-
-    public void AddForce(Vector3 force)
-    {
-        acceleration += force / mass;
-    }
-
-    public void AddDrag()
-    {
-        Vector3 force = velocity;
-        force.Normalize();
-        force *= -0.5f;
-
-        float speed = velocity.magnitude;
-
-        force *= speed * drag_coefficient * speed;
-        AddForce(force);
-    }
-    public void AddFriction()
-    {
-        Vector3 force = velocity;
-        force.Normalize();
-        force *= -1;
-
-        float normal = mass;
-
-        force *= friction_coefficient * normal;
-        AddForce(force);
-    }
 
     public static float Map(float value, float from1, float to1, float from2, float to2)
     {
@@ -414,9 +235,9 @@ public class Predator : MonoBehaviour
     {
         if (other.tag == "Prey")
         {
-            SimulationController.instance.RemovePredator(other.gameObject);
-            Destroy(other.gameObject);
-            energy_left += 350;
+            other.GetComponent<Prey>().dead = true;
+            energy += 200;
+            time_without_food = 0f;
         }
     }
 }

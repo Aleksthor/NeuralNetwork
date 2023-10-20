@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Xml.Schema;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,8 +10,12 @@ using UnityEngine.UI;
 public class CarController : MonoBehaviour
 {
     // The object we spawn in the world
+    [SerializeField] List<Vector3> camera_positions = new List<Vector3>();
+
     [SerializeField] GameObject car_prefab;
     [SerializeField] GameObject main_camera;
+
+    private bool cinematic_mode = false;
 
     // Logic variables
     [SerializeField] Vector3 spawn_position = new Vector3(0f, 0f, -25f);
@@ -29,7 +34,7 @@ public class CarController : MonoBehaviour
     [SerializeField] TextMeshProUGUI average_fitness;
 
     [SerializeField] TextMeshProUGUI best_fitness;
-    [SerializeField] TextMeshProUGUI average_speed;
+    [SerializeField] TextMeshProUGUI lap_time;
     [SerializeField] TextMeshProUGUI number_of_laps;
     [SerializeField] Button start_over;
 
@@ -38,7 +43,7 @@ public class CarController : MonoBehaviour
     {
         for (int i = 0; i < cars_per_generation; i++)
         {
-            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
+            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.Euler(0f, 45f, 0f)));
         }
 
         if (main_camera == null)
@@ -52,6 +57,12 @@ public class CarController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.Tab))
+        {
+            cinematic_mode = !cinematic_mode;
+        }
+
+
         bool all_dead = true;
         for (int i = 0; i < cars.Count; i++)
         {
@@ -66,11 +77,26 @@ public class CarController : MonoBehaviour
         for (int i = 0; i < cars.Count; i++)
         {
             PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
-            if (car.fitness > b)
+            if (car.current_checkpoint + (car.current_lap * 18) > b && !car.dead)
             {
-                b = (int)car.fitness;
+                b = car.current_checkpoint + (car.current_lap * 18);
                 n = i;
             }
+        }
+        if (cars[n].GetComponent<PhysicsCar>().dead)
+        {
+            b = 0;
+            n = 0;
+            for (int i = 0; i < cars.Count; i++)
+            {
+                PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
+                if (car.current_checkpoint + (car.current_lap * 18) > b && !car.dead)
+                {
+                    b = car.current_checkpoint + (car.current_lap * 18);
+                    n = i;
+                }
+            }
+
         }
 
 
@@ -80,32 +106,36 @@ public class CarController : MonoBehaviour
             if (cars[n].GetComponent<PhysicsCar>().dead)
             {
                 int b2 = 0;
-                int n2 = 0;
                 for (int i = 0; i < cars.Count; i++)
                 {
                     PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
                     if (car.fitness > b2 && !car.dead)
                     {
                         b2 = (int)car.fitness;
-                        n2 = i;
                     }
                 }
-                n = n2;
             }
 
 
-            if (cars[n].GetComponent<PhysicsCar>().current_checkpoint > 0 || cars[n].GetComponent<PhysicsCar>().current_lap > 0)
+            if (cars[n] != null)
             {
-                main_camera.transform.position = cars[n].transform.position;
-                main_camera.transform.position += new Vector3(0, 30, 0);
-                main_camera.transform.position -= cars[n].transform.forward * 30;
+                if (cinematic_mode)
+                {
+                    main_camera.transform.position = camera_positions[cars[n].GetComponent<PhysicsCar>().current_checkpoint];
+                }
+                else
+                {
+                    main_camera.transform.position = cars[n].GetComponent<PhysicsCar>().transform.position;
+                    main_camera.transform.position -= cars[n].GetComponent<PhysicsCar>().transform.forward * 20f;
+                    main_camera.transform.position += cars[n].GetComponent<PhysicsCar>().transform.up * 20f;
+                }
 
                 main_camera.transform.LookAt(cars[n].transform, new Vector3(0, 1, 0));
             }
             else
             {
-                main_camera.transform.position = new Vector3(-95, 30, -75);
-                main_camera.transform.eulerAngles = new Vector3(45,0,0);
+                main_camera.transform.position = spawn_position +  new Vector3(-20, 30, -20);
+                main_camera.transform.LookAt(spawn_position, new Vector3(0, 1, 0));
             }
 
         }
@@ -156,9 +186,13 @@ public class CarController : MonoBehaviour
                 average_fitness.text = (total / cars_per_generation).ToString();
                 PhysicsCar car = cars[index].GetComponent<PhysicsCar>();
                 best_fitness.text = car.fitness.ToString();
-                average_speed.text = car.average_velocity.magnitude.ToString("F2") + " m/s";
+                lap_time.text = TimeSpan.FromSeconds(car.last_lap_time).ToString();
                 number_of_laps.text = car.current_lap.ToString();
 
+            }
+            if ((total / cars_per_generation) > 4000f)
+            {
+                fitness_mode = 1;
             }
 
             parents.Add(cars[index]);
@@ -179,7 +213,7 @@ public class CarController : MonoBehaviour
         for (int i = chosen_parents; i < cars_per_generation; i++)
         {
             Debug.Log("Evolving");
-            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
+            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.Euler(0f, 45f,0f)));
             PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
             child.fitness_mode = fitness_mode;
 
@@ -229,11 +263,11 @@ public class CarController : MonoBehaviour
             cars.RemoveAt(i);
             Destroy(go);
         }
-
+        fitness_mode = 0;
 
         for (int i = 0; i < cars_per_generation; i++)
         {
-            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.identity));
+            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.Euler(0f, 45f, 0f)));
         }
     }
 }

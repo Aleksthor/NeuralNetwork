@@ -48,7 +48,6 @@ MonoBehaviour:
   color: 0
   position: {x: 0, y: 0, z: 0}
   velocity: {x: 0, y: 0, z: 0}
-  acceleration: {x: 0, y: 0, z: 0}
   green: {fileID: 2100000, guid: 8a9d5ee379be68844ad51c2deccb9145, type: 2}
   red: {fileID: 2100000, guid: 40065d0a0af85cc4fa768272ba9bf217, type: 2}
   white: {fileID: 2100000, guid: 8f4a0621570b95b49972016474815472, type: 2}

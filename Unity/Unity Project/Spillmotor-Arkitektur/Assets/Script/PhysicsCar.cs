@@ -8,9 +8,9 @@ public class PhysicsCar : MonoBehaviour
 {
     [SerializeField] Vector3 velocity = new Vector3();
     [SerializeField] public Vector3 position = new Vector3();
-    [SerializeField] Vector3 acceleration = new Vector3();
-    [SerializeField] Vector3 total_velocity = new Vector3();
-    [SerializeField] public Vector3 average_velocity = new Vector3();
+    Vector3 acceleration = new Vector3();
+    Vector3 total_velocity = new Vector3();
+    public Vector3 average_velocity = new Vector3();
 
     float mass = 25;
     float drag_coefficient = 0.25f;
@@ -18,8 +18,9 @@ public class PhysicsCar : MonoBehaviour
 
     public int current_checkpoint = 0;
     public int current_lap = 0;
-    public float max_velocity = 50;
-
+    float max_velocity = 45;
+    float lap_time = 0f;
+    public float last_lap_time = 0f;
     [SerializeField] public float time_lived = 0f;
     [SerializeField] public float time_since_last_checkpoint = 0f;
     [SerializeField] public float fitness = 0f;
@@ -46,9 +47,11 @@ public class PhysicsCar : MonoBehaviour
         if (dead)
         {
             return;
+            
         }
         time_lived += Time.deltaTime;
         time_since_last_checkpoint += Time.deltaTime;
+        lap_time += Time.deltaTime;
         if (time_since_last_checkpoint > 10f)
         {
             dead = true;
@@ -56,12 +59,16 @@ public class PhysicsCar : MonoBehaviour
 
         if (time_lived > 5 && current_checkpoint == 0 && current_lap == 0)
         {
-            fitness -= 20000;
             dead = true;
             return;
         }
 
-        if (current_lap > 2 && average_velocity.magnitude < 7.5f)
+        if (current_lap > 0 && fitness_mode == 0)
+        {
+            dead = true;
+            return;
+        }
+        if (current_lap > 2)
         {
             dead = true;
             return;
@@ -74,7 +81,7 @@ public class PhysicsCar : MonoBehaviour
 
         RaycastHit forward_hit;
         // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward), out forward_hit, 20, layerMask))
+        if (Physics.Raycast(transform.position - new Vector3(0,0.5f,0), transform.TransformDirection(Vector3.forward), out forward_hit, 20, layerMask))
         {
             inputs.Add(Map(forward_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * forward_hit.distance, Color.red);
@@ -87,7 +94,7 @@ public class PhysicsCar : MonoBehaviour
 
         RaycastHit forward_right_hit;
         // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20, layerMask))
+        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20, layerMask))
         {
             inputs.Add(Map(forward_right_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * forward_right_hit.distance, Color.red);
@@ -100,7 +107,7 @@ public class PhysicsCar : MonoBehaviour
 
         RaycastHit forward_left_hit;
         // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20, layerMask))
+        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20, layerMask))
         {
             inputs.Add(Map(forward_left_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * forward_left_hit.distance, Color.red);
@@ -113,7 +120,7 @@ public class PhysicsCar : MonoBehaviour
 
         RaycastHit right_hit;
         // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.right), out right_hit, 20, layerMask))
+        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.right), out right_hit, 20, layerMask))
         {
             inputs.Add(Map(right_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * right_hit.distance, Color.red);
@@ -126,7 +133,7 @@ public class PhysicsCar : MonoBehaviour
 
         RaycastHit left_hit;
         // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position, transform.TransformDirection(-Vector3.right), out left_hit, 20))
+        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(-Vector3.right), out left_hit, 20))
         {
             inputs.Add(Map(left_hit.distance, 0, 20, -1f, 1f));
             Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * left_hit.distance, Color.red);
@@ -139,6 +146,7 @@ public class PhysicsCar : MonoBehaviour
 
 
         List<float> outputs = brain.FeedForward(inputs);
+
 
         if (outputs[0] >= 0.5f)
         {
@@ -164,15 +172,16 @@ public class PhysicsCar : MonoBehaviour
         {
             transform.forward = velocity.normalized;
         }
+        float lap_time_score;
         switch (fitness_mode)
         {
             case 0:
-                average_velocity = total_velocity / time_lived;
-                fitness = (300 * (current_checkpoint + (current_lap * 15)));
+                lap_time_score = last_lap_time == 0 ? 0 : 1000f / last_lap_time;
+                fitness = (300 * (current_checkpoint + (current_lap * 15))) + lap_time_score;
                 break;
             case 1:
-                average_velocity = total_velocity / time_lived;
-                fitness = average_velocity.magnitude;
+                lap_time_score = last_lap_time == 0 ? 0 : 1000f / last_lap_time;
+                fitness = lap_time_score;
                 break;
             default:
                 break;
@@ -298,12 +307,12 @@ public class PhysicsCar : MonoBehaviour
                 dead = true;
                 return;
             }
-            if (index.index == 15 && current_checkpoint == 1)
+            if (index.index == 18 && current_checkpoint == 1)
             {
                 dead = true;
                 return;
             }
-            if (index.index == 15 && current_checkpoint == 0)
+            if (index.index == 18 && current_checkpoint == 0)
             {
                 dead = true;
                 return;
@@ -312,8 +321,27 @@ public class PhysicsCar : MonoBehaviour
             if (index.index == current_checkpoint)
             {
                 time_since_last_checkpoint = 0f;
-                if (index.index == 15)
+                if (index.index == 18)
                 {
+                    last_lap_time = lap_time;
+                    lap_time = 0f;
+
+                    float lap_time_score;
+                    switch (fitness_mode)
+                    {
+                        case 0:
+                            lap_time_score = last_lap_time == 0 ? 0 : 1000f / last_lap_time;
+                            fitness = (300 * (current_checkpoint + (current_lap * 15))) + lap_time_score;
+                            break;
+                        case 1:
+                            lap_time_score = last_lap_time == 0 ? 0 : 1000f / last_lap_time;
+                            fitness = lap_time_score;
+                            break;
+                        default:
+                            break;
+                    }
+
+
                     current_checkpoint = 0;
                     current_lap++;
                 }

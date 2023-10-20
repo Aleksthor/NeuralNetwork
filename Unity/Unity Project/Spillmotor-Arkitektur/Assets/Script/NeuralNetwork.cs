@@ -358,7 +358,6 @@ public class NeuralNetwork
     public void GeneticAlgorithm()
     {
         int random_mutation_chance = UnityEngine.Random.Range(10, 100);
-        Debug.Log(random_mutation_chance);
         for (int n = 0; n < hidden_layers.Count; n++) 
         {
             for (int i = 0; i < hidden_layers[n].rows; i++)

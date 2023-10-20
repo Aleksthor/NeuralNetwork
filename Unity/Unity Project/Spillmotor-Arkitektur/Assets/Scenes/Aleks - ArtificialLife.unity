@@ -181,7 +181,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1500
+  far clip plane: 2500
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -626,42 +626,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   particle_prefab: {fileID: 3107612960047798055, guid: 3734ad282c64ec44f8da73c78766a729, type: 3}
   try_again: {fileID: 507623685}
-  red_rules:
-    red_particle_g: 0
-    green_particle_g: 0
-    white_particle_g: 0
-    blue_particle_g: 0
-    red_particle_range: 0
-    green_particle_range: 0
-    white_particle_range: 0
-    blue_particle_range: 0
-  green_rules:
-    red_particle_g: 0
-    green_particle_g: 0
-    white_particle_g: 0
-    blue_particle_g: 0
-    red_particle_range: 0
-    green_particle_range: 0
-    white_particle_range: 0
-    blue_particle_range: 0
-  white_rules:
-    red_particle_g: 0
-    green_particle_g: 0
-    white_particle_g: 0
-    blue_particle_g: 0
-    red_particle_range: 0
-    green_particle_range: 0
-    white_particle_range: 0
-    blue_particle_range: 0
-  blue_rules:
-    red_particle_g: 0
-    green_particle_g: 0
-    white_particle_g: 0
-    blue_particle_g: 0
-    red_particle_range: 0
-    green_particle_range: 0
-    white_particle_range: 0
-    blue_particle_range: 0
+  red_red: -0.1
+  red_green: -0.34
+  red_white: 0.4
+  red_blue: 0
+  green_red: -0.17
+  green_green: -0.32
+  green_white: 0.34
+  green_blue: 0
+  white_red: 0
+  white_green: -0.2
+  white_white: 0.15
+  white_blue: 0
+  blue_red: 0
+  blue_green: 0
+  blue_white: 0
+  blue_blue: 0
+  simulation_speed: 2
 --- !u!4 &595556934
 Transform:
   m_ObjectHideFlags: 0
@@ -948,7 +929,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: -3, z: 0}
-  m_LocalScale: {x: 50, y: 20, z: 50}
+  m_LocalScale: {x: 50, y: 1, z: 50}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

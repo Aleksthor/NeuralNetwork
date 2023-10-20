@@ -255,16 +255,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prey_prefab: {fileID: 1136333626967600565, guid: 8c8fd92c1daa13e468222b2ad989d8cf, type: 3}
   predator_prefab: {fileID: 3671540553728712087, guid: 579354abb5f42e94e9c06ba38640da53, type: 3}
-  food_prefab: {fileID: 4029578718100397626, guid: 95317c9398e9caf4dadb1d499c9c10c3, type: 3}
-  prey_start_size: 350
-  predator_start_size: 25
-  food_start_size: 500
+  prey_list: []
+  predator_list: []
+  prey_start_size: 150
+  predator_start_size: 75
   prey_max_size: 800
   predator_max_size: 250
-  food_max_size: 750
+  prey_size: 0
+  predator_size: 0
+  object_pool:
+    disabled_prey: []
+    disabled_predator: []
   prey_text: {fileID: 0}
   predator_text: {fileID: 0}
-  food_text: {fileID: 0}
 --- !u!4 &514489983
 Transform:
   m_ObjectHideFlags: 0
