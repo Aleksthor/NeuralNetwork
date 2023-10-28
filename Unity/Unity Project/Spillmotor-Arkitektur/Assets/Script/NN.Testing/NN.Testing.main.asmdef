@@ -1,0 +1,17 @@
+{
+    "name": "NN.Testing.main",
+    "rootNamespace": "",
+    "references": [
+        "GUID:bbd283566d3b0394d8fa282dab6f9bb7",
+        "GUID:f2a808510a21f4548acb30457456ac7b"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
