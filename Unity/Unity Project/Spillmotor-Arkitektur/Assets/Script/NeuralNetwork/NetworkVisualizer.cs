@@ -56,7 +56,7 @@ public class NetworkVisualizer : MonoBehaviour
                 hidden.Add(new float[hidden_mat[i].rows]);
                 for (int j = 0; j < hidden[i].Length; j++)
                 {
-                    hidden[i][j] = map(hidden_mat[i].mat[j][0],-1,1,0,1);
+                    hidden[i][j] = hidden_mat[i].mat[j][0];
         }
             }
 
@@ -64,7 +64,7 @@ public class NetworkVisualizer : MonoBehaviour
             float[] outputs = new float[output_mat.rows];
             for (int i = 0; i < outputs.Length; i++)
             {
-                outputs[i] = map(output_mat.mat[i][0],-1,1,0,1);
+                outputs[i] = output_mat.mat[i][0];
         }
 
 

@@ -10,7 +10,7 @@ public class CarGameVisualizer : MonoBehaviour
     [SerializeField] List<RoadCollider> colliders = new List<RoadCollider>();
     [SerializeField] List<GameObject> ui_elements = new List<GameObject>();
     [SerializeField] TextMeshProUGUI lap;
-
+    [SerializeField] bool isRacingMode = false;
     private void Update()
     {
         bool no_times = true;
@@ -109,16 +109,41 @@ public class CarGameVisualizer : MonoBehaviour
 
         for (int i = 0; i < twenty_best.Count; i++)
         {
-            TextMeshProUGUI position = ui_elements[i].transform.Find("Position").GetComponent<TextMeshProUGUI>();
-            Image color = ui_elements[i].transform.Find("Color").GetComponent<Image>();
-            TextMeshProUGUI car = ui_elements[i].transform.Find("Car").GetComponent<TextMeshProUGUI>();
-            TextMeshProUGUI timeinterval = ui_elements[i].transform.Find("TimeInterval").GetComponent<TextMeshProUGUI>();
-            position.text = (i + 1).ToString();
-            color.color = twenty_best[i].GetColor();
-            car.text = "Car_" + twenty_best[i].GetIndex().ToString();
-            timeinterval.text = intervals[i] == 0f ? "Interval" : "+" + intervals[i].ToString("F3");
-            bool is_not_dead = (twenty_best[i].current_checkpoint == 0 && twenty_best[i].current_lap > 0);
-            timeinterval.text = twenty_best[i].dead && !is_not_dead ? "DNF" : timeinterval.text;
+            if (!isRacingMode)
+            {
+                TextMeshProUGUI position = ui_elements[i].transform.Find("Position").GetComponent<TextMeshProUGUI>();
+                Image color = ui_elements[i].transform.Find("Color").GetComponent<Image>();
+                TextMeshProUGUI car = ui_elements[i].transform.Find("Car").GetComponent<TextMeshProUGUI>();
+                TextMeshProUGUI timeinterval = ui_elements[i].transform.Find("TimeInterval").GetComponent<TextMeshProUGUI>();
+                position.text = (i + 1).ToString();
+                color.color = twenty_best[i].GetColor();
+                car.text = "Car_" + twenty_best[i].GetIndex().ToString();
+                timeinterval.text = intervals[i] == 0f ? "Interval" : "+" + intervals[i].ToString("F3");
+                bool is_not_dead = (twenty_best[i].current_checkpoint == 0 && twenty_best[i].current_lap > 0);
+                timeinterval.text = twenty_best[i].dead && !is_not_dead ? "DNF" : timeinterval.text;
+            }
+            else
+            {
+                TextMeshProUGUI position = ui_elements[i].transform.Find("Position").GetComponent<TextMeshProUGUI>();
+                Image color = ui_elements[i].transform.Find("Color").GetComponent<Image>();
+                TextMeshProUGUI car = ui_elements[i].transform.Find("Car").GetComponent<TextMeshProUGUI>();
+                TextMeshProUGUI timeinterval = ui_elements[i].transform.Find("TimeInterval").GetComponent<TextMeshProUGUI>();
+                position.text = (i + 1).ToString();
+                color.color = twenty_best[i].GetColor();
+                if (twenty_best[i].GetComponent<PhysicsCar>().isPlayer)
+                {
+                    car.text = "Player_" + twenty_best[i].GetIndex().ToString();
+                }
+                else
+                {
+                    car.text = "AI_" + twenty_best[i].GetIndex().ToString();
+                }
+                timeinterval.text = intervals[i] == 0f ? "Interval" : "+" + intervals[i].ToString("F3");
+                bool is_not_dead = (twenty_best[i].current_checkpoint == 0 && twenty_best[i].current_lap > 0);
+                timeinterval.text = twenty_best[i].dead && !is_not_dead ? "DNF" : timeinterval.text;
+
+            }
+
         }
 
 

@@ -24,6 +24,8 @@ public class PhysicsCar : MonoBehaviour
     [SerializeField] public float time_since_last_checkpoint = 0f;
     [SerializeField] public float fitness = 0f;
     [SerializeField] public bool dead = false;
+    [SerializeField] public bool isPlayer = false;
+    [SerializeField] bool isTraining = true;
     Color color = Color.black;
 
     float sector_one = 0f;
@@ -41,7 +43,7 @@ public class PhysicsCar : MonoBehaviour
 
     public bool can_debug = false;
     public int fitness_mode = 0;
-    int index = 0;
+    [SerializeField] int index = 0;
     float show_lap_time = 0f;
 
     private void Start()
@@ -56,7 +58,6 @@ public class PhysicsCar : MonoBehaviour
         {
             brain = new NeuralNetwork();
             brain.Setup(5, new List<int>() { 32, 32 }, 2);
-            brain.ReadFromFile("Assets/SavedBrains/56sec.txt");
         }
         best_sector_one = float.MaxValue;
         best_sector_two = float.MaxValue;
@@ -103,6 +104,7 @@ public class PhysicsCar : MonoBehaviour
             return;
         }
         float lap_time_score;
+
         if (current_lap > 0 && fitness_mode == 0)
         {
             switch (fitness_mode)
@@ -140,96 +142,126 @@ public class PhysicsCar : MonoBehaviour
             return;
         }
 
-        List<float> inputs = new List<float>();
-
-        int layerMask = 1 << 8;
 
 
-        RaycastHit forward_hit;
-        // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position - new Vector3(0,0.5f,0), transform.TransformDirection(Vector3.forward), out forward_hit, 20, layerMask))
+        if (!isPlayer)
         {
-            inputs.Add(Map(forward_hit.distance, 0, 20, -1f, 1f));
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * forward_hit.distance, Color.red);
+            List<float> inputs = new List<float>();
+
+            int layerMask = 1 << 8;
+
+
+            RaycastHit forward_hit;
+            // Does the ray intersect any objects excluding the player layer
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.forward), out forward_hit, 20, layerMask))
+            {
+                inputs.Add(Map(forward_hit.distance, 0, 20, -1f, 1f));
+                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * forward_hit.distance, Color.red);
+            }
+            else
+            {
+                inputs.Add(1f);
+                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 20, Color.green);
+            }
+
+            RaycastHit forward_right_hit;
+            // Does the ray intersect any objects excluding the player layer
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20, layerMask))
+            {
+                inputs.Add(Map(forward_right_hit.distance, 0, 20, -1f, 1f));
+                Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * forward_right_hit.distance, Color.red);
+            }
+            else
+            {
+                inputs.Add(1f);
+                Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * 20, Color.green);
+            }
+
+            RaycastHit forward_left_hit;
+            // Does the ray intersect any objects excluding the player layer
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20, layerMask))
+            {
+                inputs.Add(Map(forward_left_hit.distance, 0, 20, -1f, 1f));
+                Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * forward_left_hit.distance, Color.red);
+            }
+            else
+            {
+                inputs.Add(1f);
+                Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * 20, Color.green);
+            }
+
+            RaycastHit right_hit;
+            // Does the ray intersect any objects excluding the player layer
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.right), out right_hit, 20, layerMask))
+            {
+                inputs.Add(Map(right_hit.distance, 0, 20, -1f, 1f));
+                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * right_hit.distance, Color.red);
+            }
+            else
+            {
+                inputs.Add(1f);
+                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * 20, Color.green);
+            }
+
+            RaycastHit left_hit;
+            // Does the ray intersect any objects excluding the player layer
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(-Vector3.right), out left_hit, 20))
+            {
+                inputs.Add(Map(left_hit.distance, 0, 20, -1f, 1f));
+                Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * left_hit.distance, Color.red);
+            }
+            else
+            {
+                inputs.Add(1f);
+                Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * 20, Color.green);
+            }
+
+
+            List<float> outputs = brain.FeedForward(inputs);
+
+
+            if (outputs[0] >= 0.5f)
+            {
+                AddForwardInput(Map(outputs[0], 0.5f, 1f, 0f, 1f));
+            }
+            else
+            {
+                AddBackwardsInput(Map(outputs[0], 0.5f, 0f, 0f, 1f));
+            }
+            if (outputs[1] >= 0.5f)
+            {
+                AddRightInput(Map(outputs[1], 0.5f, 1f, 0f, 1f));
+            }
+            else
+            {
+                AddLeftInput(Map(outputs[1], 0.5f, 0f, 0f, 1f));
+            }
         }
         else
         {
-            inputs.Add(1f);
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 20, Color.green);
+            if (Input.GetKey(KeyCode.W))
+            {
+                AddForwardInput(1f);
+            }
+            else if (Input.GetKey(KeyCode.S))
+            {
+                AddBackwardsInput(1f);
+            }
+            else
+            {
+                AddBackwardsInput(0.1f);
+            }
+            if (Input.GetKey(KeyCode.D))
+            {
+                AddRightInput(0.8f);
+            }
+            if (Input.GetKey(KeyCode.A))
+            {
+                AddLeftInput(0.8f);
+            }
         }
 
-        RaycastHit forward_right_hit;
-        // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20, layerMask))
-        {
-            inputs.Add(Map(forward_right_hit.distance, 0, 20, -1f, 1f));
-            Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * forward_right_hit.distance, Color.red);
-        }
-        else
-        {
-            inputs.Add(1f);
-            Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * 20, Color.green);
-        }
-
-        RaycastHit forward_left_hit;
-        // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20, layerMask))
-        {
-            inputs.Add(Map(forward_left_hit.distance, 0, 20, -1f, 1f));
-            Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * forward_left_hit.distance, Color.red);
-        }
-        else
-        {
-            inputs.Add(1f);
-            Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * 20, Color.green);
-        }
-
-        RaycastHit right_hit;
-        // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.right), out right_hit, 20, layerMask))
-        {
-            inputs.Add(Map(right_hit.distance, 0, 20, -1f, 1f));
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * right_hit.distance, Color.red);
-        }
-        else
-        {
-            inputs.Add(1f);
-            Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * 20, Color.green);
-        }
-
-        RaycastHit left_hit;
-        // Does the ray intersect any objects excluding the player layer
-        if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(-Vector3.right), out left_hit, 20))
-        {
-            inputs.Add(Map(left_hit.distance, 0, 20, -1f, 1f));
-            Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * left_hit.distance, Color.red);
-        }
-        else
-        {
-            inputs.Add(1f);
-            Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * 20, Color.green);
-        }
-
-
-        List<float> outputs = brain.FeedForward(inputs);
-
-
-        if (outputs[0] >= 0.5f)
-        {
-            AddForwardInput(Map(outputs[0],0.5f,1f,0f,1f));
-        }
-        else
-        {
-            AddBackwardsInput(Map(outputs[0], 0.5f, 0f, 0f, 1f));
-        }
-        if (outputs[1] >= 0.5f)
-        {
-            AddRightInput(Map(outputs[1], 0.5f, 1f, 0f, 1f));
-        }
-        else
-        {
-            AddLeftInput(Map(outputs[1], 0.5f, 0f, 0f, 1f));
-        }
+        
 
      
         Move();
@@ -307,8 +339,6 @@ public class PhysicsCar : MonoBehaviour
     {
         //AddFriction();
         velocity += acceleration * Time.deltaTime;
-;
-
         position += velocity * Time.deltaTime;
         acceleration = Vector3.zero;
 
@@ -355,7 +385,7 @@ public class PhysicsCar : MonoBehaviour
             return;
         }
 
-        if (other.tag != "Checkpoint")
+        if (other.tag != "Checkpoint" && !isPlayer && isTraining)
         {
             time_since_last_checkpoint = 0f;
             dead = true;

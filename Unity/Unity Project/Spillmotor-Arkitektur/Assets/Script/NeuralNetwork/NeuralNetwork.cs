@@ -43,6 +43,8 @@ public class NeuralNetwork
 
     public void Setup(int I, List<int> H, int O)
     {
+
+        if (isSetup) { return; }
         num_nodes_hidden = H;
         num_nodes_input = I;
         num_nodes_output = O;
