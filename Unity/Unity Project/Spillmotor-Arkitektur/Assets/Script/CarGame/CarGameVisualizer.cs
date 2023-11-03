@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,16 +8,33 @@ using UnityEngine.UI;
 
 public class CarGameVisualizer : MonoBehaviour
 {
+    public static CarGameVisualizer instance;
     [SerializeField] List<RoadCollider> colliders = new List<RoadCollider>();
     [SerializeField] List<GameObject> ui_elements = new List<GameObject>();
     [SerializeField] TextMeshProUGUI lap;
     [SerializeField] bool isRacingMode = false;
+
+    private void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+        }
+    }
     private void Update()
     {
         bool no_times = true;
         int highest_lap = 0;
         for (int i = colliders.Count - 1; i >= 0; i--)
         {
+            if (i == colliders.Count - 1)
+            {
+                if (colliders[i].HasTimes(0))
+                {
+                    highest_lap = colliders[i].GetLap() + 1;
+                }
+            }
+
             if (colliders[i].HasTimes(0))
             {
                 no_times = false; 
@@ -147,5 +165,53 @@ public class CarGameVisualizer : MonoBehaviour
         }
 
 
+        
+
+    }
+    public PhysicsCar BestCar()
+    {
+        bool no_times = true;
+        int highest_lap = 0;
+        for (int i = colliders.Count - 1; i >= 0; i--)
+        {
+            if (i == colliders.Count - 1)
+            {
+                if (colliders[i].HasTimes(0))
+                {
+                    highest_lap = colliders[i].GetLap() + 1;
+                }
+            }
+
+            if (colliders[i].HasTimes(0))
+            {
+                no_times = false;
+            }
+            if (colliders[i].GetLap() > highest_lap)
+            {
+                highest_lap = colliders[i].GetLap();
+            }
+
+        }
+        if (no_times)
+        {
+            return null;
+        }
+
+        for (int i = colliders.Count - 1; i >= 0; i--)
+        {
+            if (colliders[i].HasTimes(highest_lap) && colliders[i].GetLap() == highest_lap)
+            {
+                List<PhysicsCar> cars = colliders[i].GetCars(highest_lap);
+                List<float> times = colliders[i].GetTimes(highest_lap);
+                for (int j = 0; j < cars.Count; j++)
+                {
+                    if (!cars[j].dead)
+                        return cars[j];
+
+                }
+            }
+        }
+
+        return null;
     }
 }

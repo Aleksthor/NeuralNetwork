@@ -4937,7 +4937,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   velocity: {x: 0, y: 0, z: 0}
   position: {x: 0, y: 0, z: 0}
-  average_velocity: {x: 0, y: 0, z: 0}
   mesh_renderer: {fileID: 2332155528872478513}
   current_checkpoint: 0
   current_lap: 0
@@ -4945,8 +4944,13 @@ MonoBehaviour:
   time_since_last_checkpoint: 0
   fitness: 0
   dead: 0
-  can_debug: 0
+  isPlayer: 0
+  isTraining: 1
+  number: {fileID: 6630858901961603939}
+  done: 0
+  view_distance: 40
   fitness_mode: 0
+  index: 0
 --- !u!65 &276954881270132221
 BoxCollider:
   m_ObjectHideFlags: 0

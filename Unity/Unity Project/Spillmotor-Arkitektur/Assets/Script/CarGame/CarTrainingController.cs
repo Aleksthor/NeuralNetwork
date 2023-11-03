@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Xml;
 using TMPro;
 using UnityEditor;
 using UnityEngine;
@@ -49,10 +48,6 @@ public class CarTrainingController : MonoBehaviour
 
     // Current fitness mode - will determine what the cars will focus on
     int fitness_mode = 0;
-    // the best fitness right now
-    int b = 0;
-    // index of the best fitness right now
-    int n = 0;
     // Best sectors so far
     float best_sector_one = float.MaxValue;
     float best_sector_two = float.MaxValue;
@@ -135,179 +130,141 @@ public class CarTrainingController : MonoBehaviour
 
 
         bool all_dead = true;
+        int done = 0;
         for (int i = 0; i < cars.Count; i++)
         {
             PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
+            if (car.done)
+            {
+                done++;
+            }
             if (!car.dead)
             {
                 all_dead = false;
                 break;
             }
         }
+        PhysicsCar follow_car = CarGameVisualizer.instance.BestCar();
 
-        for (int i = 0; i < cars.Count; i++)
+
+
+        if (follow_car != null)
         {
-            PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
-            if (car.current_checkpoint + (car.current_lap * 18) > b && !car.dead)
+            if (cinematic_mode)
             {
-                b = car.current_checkpoint + (car.current_lap * 18);
-                n = i;
-            }
-        }
-        if (cars[n].GetComponent<PhysicsCar>().dead)
-        {
-            b = 0;
-            n = 0;
-            for (int i = 0; i < cars.Count; i++)
-            {
-                PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
-                if (car.current_checkpoint + (car.current_lap * 18) > b && !car.dead)
-                {
-                    b = car.current_checkpoint + (car.current_lap * 18);
-                    n = i;
-                }
-            }
-
-        }
-
-
-
-        if (cars.Count > n)
-        {
-            if (cars[n].GetComponent<PhysicsCar>().dead)
-            {
-                int b2 = 0;
-                for (int i = 0; i < cars.Count; i++)
-                {
-                    PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
-                    if (car.fitness > b2 && !car.dead)
-                    {
-                        b2 = (int)car.fitness;
-                    }
-                }
-            }
-
-
-            if (cars[n] != null)
-            {
-                if (cinematic_mode)
-                {
-                    main_camera.transform.position = camera_positions[cars[n].GetComponent<PhysicsCar>().current_checkpoint];
-                }
-                else
-                {
-                    Vector3 prefered_pos = cars[n].GetComponent<PhysicsCar>().transform.position - 
-                                            (cars[n].GetComponent<PhysicsCar>().transform.forward * camera_back_distance) + 
-                                            (cars[n].GetComponent<PhysicsCar>().transform.up * camera_up_distance);
-
-                    main_camera.transform.position = prefered_pos;
-                }
-                main_camera.transform.LookAt(cars[n].transform, new Vector3(0, 1, 0));
-                network_visulizer.SetNetwork(cars[n].GetComponent<PhysicsCar>().brain);
-
-
-                // Current Car UI
-                TextMeshProUGUI timer = current_car_ui.transform.Find("Timer").GetComponent<TextMeshProUGUI>();
-                TextMeshProUGUI name = current_car_ui.transform.Find("Car").GetComponent<TextMeshProUGUI>();
-                Image sector_one = current_car_ui.transform.Find("Sector1").GetComponentInChildren<Image>();
-                Image sector_two = current_car_ui.transform.Find("Sector2").GetComponentInChildren<Image>();
-                Image sector_three = current_car_ui.transform.Find("Sector3").GetComponentInChildren<Image>();
-                PhysicsCar car = cars[n].GetComponent<PhysicsCar>();
-                name.text = "Car_" + car.GetIndex();
-                // Lap Time
-                int floored_lap_time = (int)car.GetTimeLived();
-                float decimals = car.GetTimeLived() - floored_lap_time;
-                string dec = decimals.ToString("F3");
-                dec = dec.Remove(0, 1);
-                timer.text = TimeSpan.FromSeconds(floored_lap_time).ToString().Remove(0, 3) + dec;
-
-                // Sector Colors
-                // 1
-                float s1 = car.GetSectorOne();
-                float b1 = car.GetBestSectorOne();
-                if (s1 <= best_sector_one && s1 != 0f)
-                {
-                    best_sector_one = s1;
-                    sector_one.color = best_sector;
-                }
-                else if (s1 == b1 && s1 != 0f)
-                {
-                    sector_one.color = good_sector;
-                }
-                else if (s1 <= b1 + 1f && s1 != 0f)
-                {
-                    sector_one.color = decent_sector;
-                }
-                else if (s1 > b1 && s1 != 0f)
-                {
-                    sector_one.color = bad_sector;
-                }
-                else if (s1 == 0f)
-                {
-                    sector_one.color = neutral;
-                }
-                // Sector Colors
-                // 2
-                float s2 = car.GetSectorTwo();
-                float b2 = car.GetBestSectorTwo();
-                if (s2 <= best_sector_two && s2 != 0f)
-                {
-                    best_sector_two = s2;
-                    sector_two.color = best_sector;
-                }
-                else if (s2 == b2 && s2 != 0f)
-                {
-                    sector_two.color = good_sector;
-                }
-                else if (s2 <= b2 + 1f && s2 != 0f)
-                {
-                    sector_two.color = decent_sector;
-                }
-                else if (s2 > b2 && s2 != 0f)
-                {
-                    sector_two.color = bad_sector;
-                }
-                else if (s2 == 0f)
-                {
-                    sector_two.color = neutral;
-                }
-                // Sector Colors
-                // 3
-                float s3 = car.GetSectorThree();
-                float b3 = car.GetBestSectorThree();
-                if (s3 <= best_sector_three && s3 != 0f)
-                {
-                    best_sector_three = s3;
-                    sector_three.color = best_sector;
-                }
-                else if (s3 == b3 && s3 != 0f)
-                {
-                    sector_three.color = good_sector;
-                }
-                else if (s3 <= b3 + 1f && s3 != 0f)
-                {
-                    sector_three.color = decent_sector;
-                }
-                else if (s3 > b3 && s3 != 0f)
-                {
-                    sector_three.color = bad_sector;
-                }
-                else if (s3 == 0f)
-                {
-                    sector_three.color = neutral;
-                }
+                main_camera.transform.position = camera_positions[follow_car.current_checkpoint];
             }
             else
             {
-                main_camera.transform.position = spawn_position +  new Vector3(-20, 30, -20);
-                main_camera.transform.LookAt(spawn_position, new Vector3(0, 1, 0));
-            }
+                Vector3 prefered_pos = follow_car.transform.position -
+                                        (follow_car.transform.forward * camera_back_distance) +
+                                        (follow_car.transform.up * camera_up_distance);
 
+                main_camera.transform.position = prefered_pos;
+            }
+            main_camera.transform.LookAt(follow_car.transform, new Vector3(0, 1, 0));
+            network_visulizer.SetNetwork(follow_car.GetComponent<PhysicsCar>().brain);
+
+
+            // Current Car UI
+            TextMeshProUGUI timer = current_car_ui.transform.Find("Timer").GetComponent<TextMeshProUGUI>();
+            TextMeshProUGUI name = current_car_ui.transform.Find("Car").GetComponent<TextMeshProUGUI>();
+            Image sector_one = current_car_ui.transform.Find("Sector1").GetComponentInChildren<Image>();
+            Image sector_two = current_car_ui.transform.Find("Sector2").GetComponentInChildren<Image>();
+            Image sector_three = current_car_ui.transform.Find("Sector3").GetComponentInChildren<Image>();
+            PhysicsCar car = follow_car.GetComponent<PhysicsCar>();
+            name.text = "Car_" + car.GetIndex();
+            // Lap Time
+            int floored_lap_time = (int)car.GetTimeLived();
+            float decimals = car.GetTimeLived() - floored_lap_time;
+            string dec = decimals.ToString("F3");
+            dec = dec.Remove(0, 1);
+            timer.text = TimeSpan.FromSeconds(floored_lap_time).ToString().Remove(0, 3) + dec;
+
+            // Sector Colors
+            // 1
+            float s1 = car.GetSectorOne();
+            float b1 = car.GetBestSectorOne();
+            if (s1 <= best_sector_one && s1 != 0f)
+            {
+                best_sector_one = s1;
+                sector_one.color = best_sector;
+            }
+            else if (s1 == b1 && s1 != 0f)
+            {
+                sector_one.color = good_sector;
+            }
+            else if (s1 <= b1 + 1f && s1 != 0f)
+            {
+                sector_one.color = decent_sector;
+            }
+            else if (s1 > b1 && s1 != 0f)
+            {
+                sector_one.color = bad_sector;
+            }
+            else if (s1 == 0f)
+            {
+                sector_one.color = neutral;
+            }
+            // Sector Colors
+            // 2
+            float s2 = car.GetSectorTwo();
+            float b2 = car.GetBestSectorTwo();
+            if (s2 <= best_sector_two && s2 != 0f)
+            {
+                best_sector_two = s2;
+                sector_two.color = best_sector;
+            }
+            else if (s2 == b2 && s2 != 0f)
+            {
+                sector_two.color = good_sector;
+            }
+            else if (s2 <= b2 + 1f && s2 != 0f)
+            {
+                sector_two.color = decent_sector;
+            }
+            else if (s2 > b2 && s2 != 0f)
+            {
+                sector_two.color = bad_sector;
+            }
+            else if (s2 == 0f)
+            {
+                sector_two.color = neutral;
+            }
+            // Sector Colors
+            // 3
+            float s3 = car.GetSectorThree();
+            float b3 = car.GetBestSectorThree();
+            if (s3 <= best_sector_three && s3 != 0f)
+            {
+                best_sector_three = s3;
+                sector_three.color = best_sector;
+            }
+            else if (s3 == b3 && s3 != 0f)
+            {
+                sector_three.color = good_sector;
+            }
+            else if (s3 <= b3 + 1f && s3 != 0f)
+            {
+                sector_three.color = decent_sector;
+            }
+            else if (s3 > b3 && s3 != 0f)
+            {
+                sector_three.color = bad_sector;
+            }
+            else if (s3 == 0f)
+            {
+                sector_three.color = neutral;
+            }
         }
         else
         {
-            main_camera.transform.position = new Vector3(-95, 30, -75);
-            main_camera.transform.eulerAngles = new Vector3(45, 0, 0);
+            Vector3 prefered_pos = spawn_position -
+                        (new Vector3(1,0,1).normalized * camera_back_distance) +
+                        (new Vector3(0, 1, 0).normalized * camera_up_distance);
+            main_camera.transform.position = prefered_pos;
+            main_camera.transform.LookAt(spawn_position, new Vector3(0, 1, 0));
+
 
             // Current Car UI
             TextMeshProUGUI timer = current_car_ui.transform.Find("Timer").GetComponent<TextMeshProUGUI>();
@@ -327,18 +284,16 @@ public class CarTrainingController : MonoBehaviour
             sector_one.color = neutral;
             sector_two.color = neutral;
             sector_three.color = neutral;
-            
-
         }
+
+
 
         current_generation.text = generation.ToString();
         generation_size.text = cars_per_generation.ToString();
         mutation_pool_size.text = chosen_parents.ToString();
 
-        if (all_dead)
+        if (all_dead || done > 25)
         {
-            b = 0;
-            n = 0;
             SpawnNewGeneration();
             generation++;
             main_camera.transform.position = spawn_position + new Vector3(-20, 30, -20);
@@ -355,29 +310,30 @@ public class CarTrainingController : MonoBehaviour
         List<GameObject> parents = new List<GameObject>();
         for (int n = 0; n < chosen_parents; n++)
         {
-            int best = 0;
+            float best = 0;
             int index = 0;
-            int total = 0;
+            float total = 0;      
             for (int i = 0; i < cars.Count; i++)
             {
                 PhysicsCar car = cars[i].GetComponent<PhysicsCar>();
-                total += (int)car.fitness;
+                total += car.fitness;
                 if (car.fitness > best)
                 {
-                    best = (int)car.fitness;
+                    best = car.fitness;
                     index = i; 
                 }
 
             }
+            PhysicsCar best_car = cars[index].GetComponent<PhysicsCar>();
             if (best_brain == null)
             {
-                best_brain = cars[index].GetComponent<PhysicsCar>().brain;
+                best_brain = best_car.brain;
             }
 
             if (n == 0)
             {
                 average_fitness.text = (total / cars_per_generation).ToString();
-                PhysicsCar car = cars[index].GetComponent<PhysicsCar>();
+                PhysicsCar car = best_car;
                 best_fitness.text = car.fitness.ToString();
                 int floored_lap_time = (int)car.GetBestLapTime();
                 float decimals = car.GetBestLapTime() - floored_lap_time;
@@ -390,13 +346,13 @@ public class CarTrainingController : MonoBehaviour
             {
                 fitness_mode = 1;
             }
-            if (best_lap_time > cars[index].GetComponent<PhysicsCar>().GetBestLapTime() && cars[index].GetComponent<PhysicsCar>().GetBestLapTime() != 0f)
+            float this_best_lap_time = best_car.GetBestLapTime();
+            if (best_lap_time > this_best_lap_time && this_best_lap_time != 0f)
             {
-                best_lap_time = cars[index].GetComponent<PhysicsCar>().GetBestLapTime();
-                best_car_name = "Car_" + cars[index].GetComponent<PhysicsCar>().GetIndex().ToString();
-                best_car_color = cars[index].GetComponent<PhysicsCar>().GetColor();
-                PhysicsCar car = cars[index].GetComponent<PhysicsCar>();
-                best_brain = car.brain;
+                best_lap_time = this_best_lap_time;
+                best_car_name = "Car_" + best_car.GetIndex().ToString();
+                best_car_color = best_car.GetColor();
+                best_brain = best_car.brain;
                 // Get all components
                 TextMeshProUGUI position = best_car_ui.transform.Find("Position").GetComponent<TextMeshProUGUI>();
                 Image color = best_car_ui.transform.Find("Color").GetComponent<Image>();
@@ -417,7 +373,7 @@ public class CarTrainingController : MonoBehaviour
                 TextMeshProUGUI s2 = best_car_ui.transform.parent.Find("Sectors").Find("Sector2").GetComponent<TextMeshProUGUI>();
                 TextMeshProUGUI s3 = best_car_ui.transform.parent.Find("Sectors").Find("Sector3").GetComponent<TextMeshProUGUI>();
 
-                float s1_time = car.GetBestLapSectorOne();
+                float s1_time = best_car.GetBestLapSectorOne();
                 Debug.Log("Sector1 time " + s1_time);
                 int floored_s1_time = (int)s1_time;
                 decimals = s1_time - floored_s1_time;
@@ -425,14 +381,14 @@ public class CarTrainingController : MonoBehaviour
                 dec = dec.Remove(0, 1);
                 s1.text = TimeSpan.FromSeconds(floored_s1_time).ToString().Remove(0, 6) + dec;
 
-                float s2_time = car.GetBestLapSectorTwo();
+                float s2_time = best_car.GetBestLapSectorTwo();
                 int floored_s2_time = (int)s2_time;
                 decimals = s2_time - floored_s2_time;
                 dec = decimals.ToString("F3");
                 dec = dec.Remove(0, 1);
                 s2.text = TimeSpan.FromSeconds(floored_s2_time).ToString().Remove(0, 6) + dec;
 
-                float s3_time = car.GetBestLapSectorThree();
+                float s3_time = best_car.GetBestLapSectorThree();
                 int floored_s3_time = (int)s3_time;
                 decimals = s3_time - floored_s3_time;
                 dec = decimals.ToString("F3");
@@ -445,21 +401,13 @@ public class CarTrainingController : MonoBehaviour
         }
 
 
-        // Destroy the "bad" cars
-        for (int i = cars.Count - 1; i >= 0; i--)
-        { 
-            GameObject go = cars[i];
-            cars.RemoveAt(i);
-            Destroy(go);
-        }
 
         int parent_index = 0;
         // "Mutate" the parents to get a full generation
         unique_id = 1;
-        for (int i = chosen_parents; i < cars_per_generation; i++)
-        {
-            cars.Add(Instantiate(car_prefab, spawn_position, Quaternion.Euler(0f, 45f,0f)));
-            PhysicsCar child = cars[cars.Count - 1].GetComponent<PhysicsCar>();
+        for (int i = 0; i < cars.Count; i++)
+        { 
+            PhysicsCar child = cars[i].GetComponent<PhysicsCar>();
             child.fitness_mode = fitness_mode;
             bool insert = false;
             while (!insert)
@@ -477,7 +425,6 @@ public class CarTrainingController : MonoBehaviour
                     unique_id++;
                 }
             }
-
             child.SetIndex(unique_id);
             unique_id++;
             PhysicsCar parent = parents[parent_index].GetComponent<PhysicsCar>();
@@ -497,7 +444,6 @@ public class CarTrainingController : MonoBehaviour
 
 
         // Set the spawn position again on all cars
-
         for (int i = 0; i < cars_per_generation; i++)
         {
             cars[i].transform.position = spawn_position;
@@ -505,6 +451,7 @@ public class CarTrainingController : MonoBehaviour
             cars[i].transform.Find("Canvas").Find("Number").GetComponent<TextMeshProUGUI>().text = car.GetIndex().ToString();
             car.ResetCar();
             car.position = spawn_position;
+            car.transform.rotation = Quaternion.Euler(0f, 45f, 0f);
         }
 
         for (int i = 0; i < colliders.Count; i++)

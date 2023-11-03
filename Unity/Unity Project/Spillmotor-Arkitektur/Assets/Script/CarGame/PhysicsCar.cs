@@ -1,23 +1,29 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class PhysicsCar : MonoBehaviour
 {
+    [Header("Movement")]
     [SerializeField] Vector3 velocity = new Vector3();
     [SerializeField] public Vector3 position = new Vector3();
     Vector3 acceleration = new Vector3();
-    public Vector3 average_velocity = new Vector3();
+
+
+    [Header("Components")]
     [SerializeField] MeshRenderer mesh_renderer;
+
 
     float mass = 25;
     float drag_coefficient = 0.25f;
     float friction_coefficient = 1f;
+    float max_velocity = 45;
 
+    [Header("GameLogic")]
     public int current_checkpoint = 0;
     public int current_lap = 0;
-    float max_velocity = 45;
     float lap_time = 0f;
     float best_lap_time = 0f;
     [SerializeField] public float time_lived = 0f;
@@ -26,6 +32,7 @@ public class PhysicsCar : MonoBehaviour
     [SerializeField] public bool dead = false;
     [SerializeField] public bool isPlayer = false;
     [SerializeField] bool isTraining = true;
+    [SerializeField] TextMeshProUGUI number;
     Color color = Color.black;
 
     float sector_one = 0f;
@@ -37,11 +44,12 @@ public class PhysicsCar : MonoBehaviour
     float best_lap_sector_one = 0f;
     float best_lap_sector_two = 0f;
     float best_lap_sector_three = 0f;
+    float pre_round = 0f;
 
     public NeuralNetwork brain;
+    public bool done = false;
 
-
-    public bool can_debug = false;
+    public float view_distance = 40f;
     public int fitness_mode = 0;
     [SerializeField] int index = 0;
     float show_lap_time = 0f;
@@ -62,9 +70,16 @@ public class PhysicsCar : MonoBehaviour
         best_sector_one = float.MaxValue;
         best_sector_two = float.MaxValue;
         best_sector_three = float.MaxValue;
+        pre_round = 0f;
     }
     void Update()
     {
+        if (pre_round < 0.5f)
+        {
+            pre_round += Time.deltaTime;
+            return;
+        }
+
         if (dead)
         {
             return;
@@ -86,11 +101,11 @@ public class PhysicsCar : MonoBehaviour
         }
         if (time_lived < 2f)
         {
-            transform.Find("Canvas").Find("Number").gameObject.SetActive(false);
+            number.gameObject.SetActive(false);
         }
         else
         {
-            transform.Find("Canvas").Find("Number").gameObject.SetActive(true);
+            number.gameObject.SetActive(true);
         }
 
         if (time_since_last_checkpoint > 10f)
@@ -98,7 +113,7 @@ public class PhysicsCar : MonoBehaviour
             dead = true;
         }
 
-        if (time_lived > 5 && current_checkpoint == 0 && current_lap == 0)
+        if (time_lived > 7f && current_checkpoint == 0 && current_lap == 0)
         {
             dead = true;
             return;
@@ -120,6 +135,7 @@ public class PhysicsCar : MonoBehaviour
                 default:
                     break;
             }
+            done = true;
             dead = true;
             return;
         }
@@ -138,6 +154,7 @@ public class PhysicsCar : MonoBehaviour
                 default:
                     break;
             }
+            done = true;
             dead = true;
             return;
         }
@@ -153,67 +170,67 @@ public class PhysicsCar : MonoBehaviour
 
             RaycastHit forward_hit;
             // Does the ray intersect any objects excluding the player layer
-            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.forward), out forward_hit, 20, layerMask))
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.forward), out forward_hit, view_distance, layerMask))
             {
-                inputs.Add(Map(forward_hit.distance, 0, 20, -1f, 1f));
+                inputs.Add(Map(forward_hit.distance, 0, view_distance, -1f, 1f));
                 Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * forward_hit.distance, Color.red);
             }
             else
             {
                 inputs.Add(1f);
-                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 20, Color.green);
+                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * view_distance, Color.green);
             }
 
             RaycastHit forward_right_hit;
             // Does the ray intersect any objects excluding the player layer
-            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, 20, layerMask))
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((Vector3.right + Vector3.forward).normalized), out forward_right_hit, view_distance, layerMask))
             {
-                inputs.Add(Map(forward_right_hit.distance, 0, 20, -1f, 1f));
+                inputs.Add(Map(forward_right_hit.distance, 0, view_distance, -1f, 1f));
                 Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * forward_right_hit.distance, Color.red);
             }
             else
             {
                 inputs.Add(1f);
-                Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * 20, Color.green);
+                Debug.DrawRay(transform.position, transform.TransformDirection((Vector3.right + Vector3.forward).normalized) * view_distance, Color.green);
             }
 
             RaycastHit forward_left_hit;
             // Does the ray intersect any objects excluding the player layer
-            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, 20, layerMask))
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection((-Vector3.right + Vector3.forward).normalized), out forward_left_hit, view_distance, layerMask))
             {
-                inputs.Add(Map(forward_left_hit.distance, 0, 20, -1f, 1f));
+                inputs.Add(Map(forward_left_hit.distance, 0, view_distance, -1f, 1f));
                 Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * forward_left_hit.distance, Color.red);
             }
             else
             {
                 inputs.Add(1f);
-                Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * 20, Color.green);
+                Debug.DrawRay(transform.position, transform.TransformDirection((-Vector3.right + Vector3.forward).normalized) * view_distance, Color.green);
             }
 
             RaycastHit right_hit;
             // Does the ray intersect any objects excluding the player layer
-            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.right), out right_hit, 20, layerMask))
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(Vector3.right), out right_hit, view_distance, layerMask))
             {
-                inputs.Add(Map(right_hit.distance, 0, 20, -1f, 1f));
+                inputs.Add(Map(right_hit.distance, 0, view_distance, -1f, 1f));
                 Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * right_hit.distance, Color.red);
             }
             else
             {
                 inputs.Add(1f);
-                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * 20, Color.green);
+                Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.right) * view_distance, Color.green);
             }
 
             RaycastHit left_hit;
             // Does the ray intersect any objects excluding the player layer
-            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(-Vector3.right), out left_hit, 20))
+            if (Physics.Raycast(transform.position - new Vector3(0, 0.5f, 0), transform.TransformDirection(-Vector3.right), out left_hit, view_distance))
             {
-                inputs.Add(Map(left_hit.distance, 0, 20, -1f, 1f));
+                inputs.Add(Map(left_hit.distance, 0, view_distance, -1f, 1f));
                 Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * left_hit.distance, Color.red);
             }
             else
             {
                 inputs.Add(1f);
-                Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * 20, Color.green);
+                Debug.DrawRay(transform.position, transform.TransformDirection(-Vector3.right) * view_distance, Color.green);
             }
 
 
@@ -530,6 +547,7 @@ public class PhysicsCar : MonoBehaviour
 
     public void ResetCar()
     {
+        pre_round = 0f;
         current_checkpoint = 0;
         current_lap = 0;
         max_velocity = 45;
@@ -544,6 +562,7 @@ public class PhysicsCar : MonoBehaviour
         sector_one = 0f;
         sector_two = 0f;
         sector_three = 0f;
+        done = false;
     }
 
     public float GetBestLapTime()
